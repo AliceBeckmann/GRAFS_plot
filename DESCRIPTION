@@ -1,0 +1,19 @@
+Package: GRAFS
+Type: Package
+Title: GRAFS plotter
+Version: 0.1
+Authors@R: c(
+    person(
+      "Alfredo", "Rodriguez",
+      email = "alfredo.rodriguez@uclm.es",
+      role = c("aut", "cre")
+    )
+  )
+Description: This package allows the automated creation of GRAFS (General Representation of Agro-Food Systems) plots, as described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noë et al. (2017). It requires the draw.io software to be installed on the computer and the input data to be properly formatted in Excel. The software has been thoroughly tested on Windows 11 with draw.io version 15.4.0, and on macOS Sequoia 15.5 with draw.io version 26.2.15. This software is provided "as is" without any warranties or guarantees. The author assumes no responsibility for any errors, data loss, or unintended consequences resulting from its use. Users are solely responsible for verifying the accuracy and suitability of the software for their specific needs.
+Imports: openxlsx, stringr, tidyr, readtext, XML, processx, dplyr
+License: CC BY-NC 4.0
+Encoding: UTF-8
+NeedsCompilation: no
+Packaged: 2025-06-18 14:48:08 UTC; alfredo
+Author: Alfredo Rodriguez [aut, cre]
+Maintainer: Alfredo Rodriguez <alfredo.rodriguez@uclm.es>
