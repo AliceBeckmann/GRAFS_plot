@@ -144,6 +144,310 @@ year_info <- function(YEARS) {
   return(label)
 }
 
+prepare_data <- function(XLSX_INPUTS) {
+  d <- openxlsx::read.xlsx(XLSX_INPUTS)
+  d <- unique(d)
+
+  # TODO: handle these cleanly, so annoying
+  d$label <- gsub("&lt;", "<", d$label)
+  d$label <- gsub("&gt;", ">", d$label)
+
+  subset(d, !grepl("WIDTH_MAX", label))
+}
+
+prepare_directories <- function(PATH_OUTPUTS) {
+  dir.create(PATH_OUTPUTS, showWarnings = FALSE)
+  dir.create(paste0(PATH_OUTPUTS, "xml/"), showWarnings = FALSE)
+  dir.create(paste0(PATH_OUTPUTS, "png/"), showWarnings = FALSE)
+}
+
+augment_crplndtotn <- function(dact, dactch = NULL, PLOT_CHANGE = FALSE) {
+  x <- which(dact$label == "<CRPLNDTOTN>")
+  if (length(x) == 0) {
+    xx <- subset(
+      dact,
+      is.element(
+        label,
+        c("<PERrN>", "<PERiN>", "<NPErN>", "<NPEiN>", "<GREHN>")
+      )
+    )
+    xx$data <- as.numeric(xx$data)
+    xxx <- xx %>%
+      group_by(province, year, align, arrowColor) %>%
+      summarise(label = "<CRPLNDTOTN>", data = sum(data))
+    xxx <- xxx[, c("province", "year", "label", "data", "align", "arrowColor")]
+    dact <- rbind(dact, xxx)
+    if (PLOT_CHANGE && !is.null(dactch)) {
+      xxxch <- xxx
+      xxxch$data <- NA
+      dactch <- rbind(dactch, xxx)
+    }
+  }
+  list(dact = dact, dactch = dactch)
+}
+
+apply_unit_label_changes <- function(dact, dactch, UNITch, LABELch) {
+  UNITch_flat <- unlist(UNITch)
+  if (!any(is.na(UNITch_flat))) {
+    for (ii in seq_along(UNITch)) {
+      dact$data[dact$label == UNITch[[ii]]$old] <- as.numeric(dact$data[
+        dact$label == UNITch[[ii]]$old
+      ]) /
+        UNITch[[ii]]$div
+      dact$label[dact$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
+      dactch$label[dactch$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
+    }
+  }
+  LABELch_flat <- unlist(LABELch)
+  if (!any(is.na(LABELch_flat))) {
+    for (ii in seq_along(LABELch)) {
+      # This only changes XML styles, not data
+      # The actual style change is done in XML doc preparation
+      next
+    }
+  }
+  list(dact = dact, dactch = dactch)
+}
+
+process_label <- function(
+  doc,
+  x,
+  xch,
+  lact,
+  YEARS,
+  YEARS_CHANGE,
+  DECIMALES_XML,
+  PLOT_CHANGE,
+  INCREASE_COLOR,
+  DECREASE_COLOR,
+  T_ID_ARROW
+) {
+  arrowcolor <- unique(x$arrowColor)
+  value_change <- NA
+  if (lact == "<PROVINCE_NAME>") {
+    mean_val <- x$data[1]
+  } else if (lact == "<YEAR>") {
+    mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
+  } else {
+    x$data <- as.numeric(x$data)
+    mean_val <- round(mean(x$data), DECIMALES_XML)
+    if (mean_val == 0) {
+      mean_val <- round(mean(x$data), DECIMALES_XML + 1)
+    }
+    if (PLOT_CHANGE && !is.null(xch)) {
+      xch$data <- as.numeric(xch$data)
+      value_change <- mean(x$data) * 100 / mean(xch$data) - 100
+      if (mean(xch$data) == 0) value_change <- NA
+    }
+  }
+  doc <- change_style(doc, lact, "strokeWidth", mean_val, T_ID_ARROW)
+  if (!is.na(arrowcolor)) {
+    doc <- change_style(doc, lact, "fillColor", arrowcolor, T_ID_ARROW)
+  }
+  if (PLOT_CHANGE && !is.na(value_change)) {
+    doc <- change_style(
+      doc,
+      lact,
+      "fillColor",
+      ifelse(value_change > 0, INCREASE_COLOR, DECREASE_COLOR),
+      T_ID_ARROW
+    )
+    doc <- change_bubble_size(doc, lact, abs(value_change), 12)
+  }
+  doc <- replace_label_in_value(doc, lact, mean_val)
+  doc
+}
+
+parse_period <- function(tPER) {
+  if (grepl("-", tPER)) {
+    PLOT_CHANGE <- TRUE
+    aux <- str_split(tPER, "-")[[1]]
+    YEARS <- as.numeric(aux[1])
+    YEARS_CHANGE <- as.numeric(aux[2])
+  } else {
+    PLOT_CHANGE <- FALSE
+    YEARS <- stringr::str_split_1(tPER, ":") |> as.integer()
+    YEARS_CHANGE <- NULL
+  }
+  list(PLOT_CHANGE = PLOT_CHANGE, YEARS = YEARS, YEARS_CHANGE = YEARS_CHANGE)
+}
+
+select_region_data <- function(d, PROV_ACT, YEARS, YEARS_CHANGE, PLOT_CHANGE) {
+  dact <- subset(d, province == PROV_ACT & is.element(year, YEARS))
+  dactch <- if (PLOT_CHANGE) {
+    subset(d, province == PROV_ACT & is.element(year, YEARS_CHANGE))
+  } else {
+    NULL
+  }
+  list(dact = dact, dactch = dactch)
+}
+
+initialize_xml_doc <- function(
+  XML_BASE,
+  PLOT_CHANGE,
+  INCREASE_COLOR,
+  T_ID_ARROW,
+  LABELch,
+  VAL_MAX_WIDTH
+) {
+  doc <- xml2::read_xml(XML_BASE)
+  if (PLOT_CHANGE) {
+    doc <- change_style(
+      doc,
+      "<YEARCHANGE>",
+      "fillColor",
+      INCREASE_COLOR,
+      T_ID_ARROW
+    )
+  }
+  LABELch_flat <- unlist(LABELch)
+  if (!any(is.na(LABELch_flat))) {
+    for (ii in seq_along(LABELch)) {
+      doc <- change_style(
+        doc,
+        LABELch[[ii]]$old,
+        "fillColor",
+        LABELch[[ii]]$new,
+        T_ID_ARROW
+      )
+    }
+  }
+  doc <- change_style(
+    doc,
+    "<WIDTH_MAX>",
+    "strokeWidth",
+    VAL_MAX_WIDTH,
+    T_ID_ARROW
+  )
+  doc
+}
+
+process_labels_loop <- function(
+  doc,
+  dact,
+  dactch,
+  YEARS,
+  YEARS_CHANGE,
+  DECIMALES_XML,
+  PLOT_CHANGE,
+  INCREASE_COLOR,
+  DECREASE_COLOR,
+  T_ID_ARROW
+) {
+  for (lact in unique(dact$label)) {
+    x <- dact[dact$label == lact, ]
+    xch <- if (PLOT_CHANGE) dactch[dactch$label == lact, ] else NULL
+    if (length(x[, 1]) != length(YEARS)) {
+      warning("something_is_missing_check")
+    }
+    if (
+      PLOT_CHANGE && !is.null(xch) && length(xch[, 1]) != length(YEARS_CHANGE)
+    ) {
+      warning("something_is_missing_check")
+    }
+    doc <- process_label(
+      doc,
+      x,
+      xch,
+      lact,
+      YEARS,
+      YEARS_CHANGE,
+      DECIMALES_XML,
+      PLOT_CHANGE,
+      INCREASE_COLOR,
+      DECREASE_COLOR,
+      T_ID_ARROW
+    )
+  }
+  doc
+}
+
+process_period_region <- function(
+  PERIOD,
+  tPER,
+  PERIODS,
+  REGIONS,
+  d,
+  XML_BASE,
+  PATH_OUTPUTS,
+  DRAW_IO_EXE,
+  DECIMALES_XML,
+  VAL_MAX_WIDTH,
+  INCREASE_COLOR,
+  DECREASE_COLOR,
+  T_ID_ARROW,
+  UNITch,
+  LABELch,
+  OVERWRITE
+) {
+  period_info <- parse_period(tPER)
+  PLOT_CHANGE <- period_info$PLOT_CHANGE
+  YEARS <- period_info$YEARS
+  YEARS_CHANGE <- period_info$YEARS_CHANGE
+
+  for (PROV_ACT in REGIONS) {
+    region_data <- select_region_data(
+      d,
+      PROV_ACT,
+      YEARS,
+      YEARS_CHANGE,
+      PLOT_CHANGE
+    )
+    dact <- region_data$dact
+    dactch <- region_data$dactch
+
+    aug <- augment_crplndtotn(dact, dactch, PLOT_CHANGE)
+    dact <- aug$dact
+    dactch <- aug$dactch
+
+    changes <- apply_unit_label_changes(dact, dactch, UNITch, LABELch)
+    dact <- changes$dact
+    dactch <- changes$dactch
+
+    FACT_XML <- paste0(
+      PATH_OUTPUTS,
+      "xml/",
+      "GRAFS_",
+      PROV_ACT,
+      "_P",
+      PERIOD,
+      "_MEAN_",
+      year_info(YEARS),
+      ".xml"
+    )
+    if (file.exists(FACT_XML) & !OVERWRITE) {
+      next
+    }
+
+    doc <- initialize_xml_doc(
+      XML_BASE,
+      PLOT_CHANGE,
+      INCREASE_COLOR,
+      T_ID_ARROW,
+      LABELch,
+      VAL_MAX_WIDTH
+    )
+    doc <- process_labels_loop(
+      doc,
+      dact,
+      dactch,
+      YEARS,
+      YEARS_CHANGE,
+      DECIMALES_XML,
+      PLOT_CHANGE,
+      INCREASE_COLOR,
+      DECREASE_COLOR,
+      T_ID_ARROW
+    )
+    if (!PLOT_CHANGE) {
+      doc <- remove_change_bubbles(doc)
+    }
+    writeLines(as.character(doc), FACT_XML)
+    crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
+    print(paste0("GRAFS creado!"))
+  }
+}
+
 create_GRAFS <- function(
   XLSX_INPUTS,
   PATH_OUTPUTS,
@@ -164,181 +468,27 @@ create_GRAFS <- function(
   DATOch = NA
 ) {
   T_ID_ARROW <- openxlsx::read.xlsx(TABLA_ID_XML)
-  dir.create(PATH_OUTPUTS, showWarnings = F)
-  dir.create(paste0(PATH_OUTPUTS, "xml/"), showWarnings = F)
-  dir.create(paste0(PATH_OUTPUTS, "png/"), showWarnings = F)
-  d <- openxlsx::read.xlsx(XLSX_INPUTS)
-  d <- unique(d)
-  d$label <- gsub("&lt;", "<", d$label)
-  d$label <- gsub("&gt;", ">", d$label)
-  if (length(unique(d$year)) == 1) {
-    if (unique(d$year) == 9999) {
-      d2 <- d
-      d2$year <- 9998
-      d <- rbind(d, d2)
-    }
-  }
-  d <- subset(d, !grepl("WIDTH_MAX", label))
-  for (PERIOD in 1:length(PERIODS)) {
+  prepare_directories(PATH_OUTPUTS)
+  d <- prepare_data(XLSX_INPUTS)
+  for (PERIOD in seq_along(PERIODS)) {
     tPER <- PERIODS[PERIOD]
-    if (grepl("-", tPER)) {
-      PLOT_CHANGE <- TRUE
-      aux <- str_split(tPER, "-")[[1]]
-      YEARS <- as.numeric(aux[1])
-      YEARS_CHANGE <- as.numeric(aux[2])
-    } else {
-      PLOT_CHANGE <- FALSE
-      YEARS <- stringr::str_split_1(tPER, ":") |> as.integer()
-    }
-    for (PROV_ACT in REGIONS) {
-      dact <- subset(d, province == PROV_ACT & is.element(year, YEARS))
-      if (PLOT_CHANGE) {
-        dactch <- subset(
-          d,
-          province == PROV_ACT & is.element(year, YEARS_CHANGE)
-        )
-      }
-      FACT_XML <- paste0(
-        PATH_OUTPUTS,
-        "xml/",
-        "GRAFS_",
-        PROV_ACT,
-        "_P",
-        PERIOD,
-        "_MEAN_",
-        year_info(YEARS),
-        ".xml"
-      )
-      if (file.exists(FACT_XML) & !OVERWRITE) {
-        next
-      }
-      doc <- xml2::read_xml(XML_BASE)
-      if (PLOT_CHANGE) {
-        doc <- change_style(
-          doc,
-          "<YEARCHANGE>",
-          "fillColor",
-          INCREASE_COLOR,
-          T_ID_ARROW
-        )
-      }
-      LABELch_flat <- unlist(LABELch)
-      if (!any(is.na(LABELch_flat))) {
-        for (ii in 1:length(LABELch)) {
-          doc <- change_style(
-            doc,
-            LABELch[[ii]]$old,
-            "fillColor",
-            LABELch[[ii]]$new,
-            T_ID_ARROW
-          )
-        }
-      }
-      doc <- change_style(
-        doc,
-        "<WIDTH_MAX>",
-        "strokeWidth",
-        VAL_MAX_WIDTH,
-        T_ID_ARROW
-      )
-      x <- which(dact$label == "<CRPLNDTOTN>")
-      if (length(x) == 0) {
-        xx <- subset(
-          dact,
-          is.element(
-            label,
-            c("<PERrN>", "<PERiN>", "<NPErN>", "<NPEiN>", "<GREHN>")
-          )
-        )
-        xx$data <- as.numeric(xx$data)
-        xxx <- xx %>%
-          group_by(province, year, align, arrowColor) %>%
-          summarise(label = "<CRPLNDTOTN>", data = sum(data))
-        xxx <- xxx[, c(
-          "province",
-          "year",
-          "label",
-          "data",
-          "align",
-          "arrowColor"
-        )]
-        dact <- rbind(dact, xxx)
-        if (PLOT_CHANGE) {
-          xxxch <- xxx
-          xxxch$data <- NA
-          dactch <- rbind(dactch, xxx)
-        }
-      }
-      UNITch_flat <- unlist(UNITch)
-      if (!any(is.na(UNITch_flat))) {
-        for (ii in 1:length(UNITch)) {
-          dact$data[dact$label == UNITch[[ii]]$old] <- as.numeric(dact$data[
-            dact$label == UNITch[[ii]]$old
-          ]) /
-            UNITch[[ii]]$div
-          dact$label[dact$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
-          dactch$label[dactch$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
-        }
-      }
-      for (lact in unique(dact$label)) {
-        x <- dact[dact$label == lact, ]
-        if (PLOT_CHANGE) {
-          xch <- dactch[dactch$label == lact, ]
-        }
-        if (length(x[, 1]) != length(YEARS)) {
-          warning("something_is_missing_check")
-        }
-        if (PLOT_CHANGE) {
-          if (length(xch[, 1]) != length(YEARS_CHANGE)) {
-            warning("something_is_missing_check")
-          }
-        }
-        arrowcolor <- unique(x$arrowColor)
-        value_change <- NA
-        if (lact == "<PROVINCE_NAME>") {
-          mean_val <- x$data[1]
-        } else {
-          if (lact == "<YEAR>") {
-            mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
-          } else {
-            x$data <- as.numeric(x$data)
-            mean_val <- round(mean(x$data), DECIMALES_XML)
-            if (mean_val == 0) {
-              mean_val <- round(mean(x$data), DECIMALES_XML + 1)
-            }
-            if (PLOT_CHANGE) {
-              xch$data <- as.numeric(xch$data)
-              value_change <- mean(x$data) * 100 / mean(xch$data) - 100
-              if (mean(xch$data) == 0) {
-                value_change <- NA
-              }
-            }
-          }
-        }
-        doc <- change_style(doc, lact, "strokeWidth", mean_val, T_ID_ARROW)
-        if (!is.na(arrowcolor)) {
-          doc <- change_style(doc, lact, "fillColor", arrowcolor, T_ID_ARROW)
-        }
-        if (PLOT_CHANGE) {
-          if (!is.na(value_change)) {
-            doc <- change_style(
-              doc,
-              lact,
-              "fillColor",
-              ifelse(value_change > 0, INCREASE_COLOR, DECREASE_COLOR),
-              T_ID_ARROW
-            )
-            doc <- change_bubble_size(doc, lact, abs(value_change), 12)
-          }
-        }
-        doc <- replace_label_in_value(doc, lact, mean_val)
-      }
-      if (!PLOT_CHANGE) {
-        doc <- remove_change_bubbles(doc)
-      }
-      writeLines(as.character(doc), FACT_XML)
-      crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
-      print(paste0("GRAFS creado!"))
-    }
+    process_period_region(
+      PERIOD,
+      tPER,
+      PERIODS,
+      REGIONS,
+      d,
+      XML_BASE,
+      PATH_OUTPUTS,
+      DRAW_IO_EXE,
+      DECIMALES_XML,
+      VAL_MAX_WIDTH,
+      INCREASE_COLOR,
+      DECREASE_COLOR,
+      T_ID_ARROW,
+      UNITch,
+      LABELch,
+      OVERWRITE
+    )
   }
 }
