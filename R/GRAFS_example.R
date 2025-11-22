@@ -22,6 +22,7 @@ run_basic_example <- function() {
   XLSX_INPUTS <- system.file(
     "extdata",
     "GRAFS_spain_data.xlsx",
+    # "GRAFS_alfredo.xlsx",
     package = "GRAFS"
   )
   XML_BASE <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
@@ -33,7 +34,7 @@ run_basic_example <- function() {
 
   # Mac path
   # chmod +x /Applications/draw.io.app/Contents/MacOS/draw.io
-  DRAW_IO_EXE <- "/Applications/draw.io.app/Contents/MacOS/draw.io"
+  DRAW_IO_EXE <- "/usr/bin/drawio"
   # Default Windows path
   if (!file.exists(DRAW_IO_EXE)) {
     DRAW_IO_EXE <- "C:/Program Files/draw.io/draw.io.exe"
@@ -56,7 +57,11 @@ run_basic_example <- function() {
     XML_BASE,
     TABLA_ID_XML,
     DRAW_IO_EXE,
-    REGIONS = "spain",
-    PERIODS = c("2011:2015-1990:1994")
+    # MAX_WIDTH_ARROWS = 1,
+    # VAL_MAX_WIDTH = 10,
+    # REGIONS = "spain",
+    # PERIODS = c("2011:2015-1990:1994"),
+    REGIONS = "Albacete",
+    PERIODS = c("1930:1931")
   )
 }
