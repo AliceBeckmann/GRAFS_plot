@@ -24,7 +24,7 @@ remove_id <- function(txml, id) {
 
 
 remove_change_bubbles <- function(txml, id) {
-  if (!grepl("ellipse", txml)) {
+  if (!isTRUE(grepl("ellipse", txml))) {
     return(txml)
   }
 
@@ -206,18 +206,13 @@ change <- function(
   INCREASE_COLOR = "#97cde5",
   DECREASE_COLOR = "#a9d77f"
 ) {
-  if (
-    !grepl(
-      str_replace_all(
-        str_replace_all(etiqueta, ">", "&amp;gt;"),
-        "<",
-        "&amp;lt;"
-      ),
-      txml
-    )
-  ) {
+  etiqueta_escaped <- str_replace_all(etiqueta, "<", "&lt;")
+  etiqueta_escaped <- str_replace_all(etiqueta_escaped, ">", "&gt;")
+
+  if (!grepl(etiqueta_escaped, txml)) {
     return(txml)
   }
+
   # print(DATOch)
   # print(length(DATOch))
 
@@ -250,13 +245,10 @@ change <- function(
   }
 
   antes <- txml
+
   txml <- str_replace_all(
     txml,
-    str_replace_all(
-      str_replace_all(etiqueta, ">", "&amp;gt;"),
-      "<",
-      "&amp;lt;"
-    ),
+    etiqueta_escaped,
     str_replace_all(tdato_xml, " ", "")
   )
   if (is.na(txml) & !is.na(antes)) {
@@ -474,6 +466,10 @@ create_GRAFS <- function(
   XML_temp <- str_replace_all(XML_BASE, ".xml", "_temp.xml")
 
   d <- openxlsx::read.xlsx(XLSX_INPUTS)
+
+  d$label <- gsub("&lt;", "<", d$label)
+  d$label <- gsub("&gt;", ">", d$label)
+
   d <- unique(d)
 
   if (length(unique(d$year)) == 1) {
@@ -649,78 +645,79 @@ create_GRAFS <- function(
         if (PLOT_CHANGE) {
           xch <- dactch[dactch$label == lact, ]
         }
+      }
 
-        if (length(x[, 1]) != length(YEARS)) {
+      if (length(x[, 1]) != length(YEARS)) {
+        something_is_missing_check
+      }
+      if (PLOT_CHANGE) {
+        if (length(xch[, 1]) != length(YEARS_CHANGE)) {
           something_is_missing_check
         }
-        if (PLOT_CHANGE) {
-          if (length(xch[, 1]) != length(YEARS_CHANGE)) {
-            something_is_missing_check
-          }
-        }
-
-        # cojo la moda
-        # arrowcolor <- as.numeric(names(sort(table(x$arrowColor), decreasing = TRUE)[1]))
-        # if(length(arrowcolor)==0){
-        #   arrowcolor <- NA
-        # }
-        arrowcolor <- unique(x$arrowColor)
-
-        value_change <- NA
-        if (lact == "<PROVINCE_NAME>") {
-          mean_val <- x$data[1]
-        } else {
-          if (lact == "<YEAR>") {
-            mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
-          } else {
-            x$data <- as.numeric(x$data)
-            mean_val <- round(mean(x$data), DECIMALES_XML) #max(DECIMALES_TXT,DECIMALES_XML))
-            if (mean_val == 0) {
-              mean_val <- round(mean(x$data), DECIMALES_XML + 1)
-            }
-
-            if (PLOT_CHANGE) {
-              xch$data <- as.numeric(xch$data)
-              value_change <- mean(x$data) * 100 / mean(xch$data) - 100
-
-              if (mean(xch$data) == 0) {
-                # el base era 0
-                value_change <- NA
-              }
-            }
-          }
-        }
-        # print(arrowcolor)
-        txml <- change(
-          txml,
-          lact,
-          mean_val,
-          x$align[1],
-          value_change,
-          T_ID_ARROW = T_ID_ARROW,
-          VAL_MAX_WIDTH = VAL_MAX_WIDTH,
-          DECIMALES_XML = DECIMALES_XML,
-          XML_temp = XML_temp,
-          MAX_WIDTH_ARROWS = MAX_WIDTH_ARROWS,
-          PLOT_CHANGE = PLOT_CHANGE,
-          DATOch = DATOch,
-          ARROW_COLOR = arrowcolor
-        )
-        # print(txml)
-        # print(paste0("LACT: ",lact," MEAN: ",mean_val," value change ",value_change))
       }
 
-      # print("asadsd")
-      if (!PLOT_CHANGE) {
-        txml <- remove_change_bubbles(txml)
+      # cojo la moda
+      # arrowcolor <- as.numeric(names(sort(table(x$arrowColor), decreasing = TRUE)[1]))
+      # if(length(arrowcolor)==0){
+      #   arrowcolor <- NA
+      # }
+      arrowcolor <- unique(x$arrowColor)
+
+      arrowcolor <- unique(x$arrowColor)
+
+      value_change <- NA
+      if (lact == "<PROVINCE_NAME>") {
+        mean_val <- x$data[1]
+      } else if (lact == "<YEAR>") {
+        mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
+      } else {
+        x$data <- as.numeric(x$data)
+        mean_val <- round(mean(x$data, na.rm = TRUE), DECIMALES_XML)
+        if (!is.na(mean_val) && mean_val == 0) {
+          mean_val <- round(mean(x$data, na.rm = TRUE), DECIMALES_XML + 1)
+        }
       }
 
-      fd <- file(FACT_XML, "wb")
-      writeChar(txml, fd, eos = NULL)
-      close(fd)
+      if (PLOT_CHANGE) {
+        xch$data <- as.numeric(xch$data)
+        value_change <- mean(x$data) * 100 / mean(xch$data) - 100
 
-      crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
-      print(paste0("GRAFS creado!"))
+        if (mean(xch$data) == 0) {
+          # el base era 0
+          value_change <- NA
+        }
+      }
     }
+
+    # print(arrowcolor)
+    txml <- change(
+      txml,
+      lact,
+      mean_val,
+      x$align[1],
+      value_change,
+      T_ID_ARROW = T_ID_ARROW,
+      VAL_MAX_WIDTH = VAL_MAX_WIDTH,
+      DECIMALES_XML = DECIMALES_XML,
+      XML_temp = XML_temp,
+      MAX_WIDTH_ARROWS = MAX_WIDTH_ARROWS,
+      PLOT_CHANGE = PLOT_CHANGE,
+      DATOch = DATOch,
+      ARROW_COLOR = arrowcolor
+    )
+    # print(txml)
+    # print(paste0("LACT: ",lact," MEAN: ",mean_val," value change ",value_change))
   }
+
+  # print("asadsd")
+  if (!PLOT_CHANGE) {
+    txml <- remove_change_bubbles(txml)
+  }
+
+  fd <- file(FACT_XML, "wb")
+  writeChar(txml, fd, eos = NULL)
+  close(fd)
+
+  crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
+  print(paste0("GRAFS creado!"))
 }

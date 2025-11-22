@@ -56,7 +56,7 @@ run_basic_example <- function() {
     XML_BASE,
     TABLA_ID_XML,
     DRAW_IO_EXE,
-    REGIONS = "spain",
-    PERIODS = c("2011:2015-1990:1994")
+    REGIONS = "Albacete",
+    PERIODS = c("1930:1932")
   )
 }
