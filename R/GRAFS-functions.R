@@ -48,14 +48,26 @@ change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
   doc
 }
 
-change_style <- function(doc, id, identifier, value, T_ID_ARROW) {
+change_arrow_style <- function(doc, label, T_ID_ARROW) {
+  if (label == "&lt;AN_LS_OTH&gt;") {
+    browser()
+  }
+
+  id <- T_ID_ARROW |>
+    dplyr::filter(label == !!label) |>
+    dplyr::pull(id)
+
+  doc
+}
+
+change_text_style <- function(doc, label, identifier, value) {
   cell <- xml2::xml_find_all(
     doc,
-    stringr::str_glue(".//mxCell[contains(@value, '{id}')]")
+    stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
   )
 
   if (length(cell) == 0) {
-    warning(paste("Cell with id", id, "not found"))
+    warning(paste("Cell with label", label, "not found"))
     return(doc)
   }
 
@@ -84,8 +96,20 @@ change_style <- function(doc, id, identifier, value, T_ID_ARROW) {
   xml2::xml_set_attr(cell, "style", new_style)
 
   if (value == 0 && identifier == "strokeWidth") {
-    doc <- remove_id(doc, id)
+    doc <- remove_id(doc, label)
+    # TODO: revise
+    # aux <- T_ID_ARROW$associated_label_id[T_ID_ARROW$id == id]
+    # if (!is.na(aux)) {
+    #   doc <- remove_id(doc, aux)
+    # }
   }
+
+  doc
+}
+
+change_style <- function(doc, label, identifier, value, T_ID_ARROW) {
+  doc <- change_text_style(doc, label, identifier, value)
+  doc <- change_arrow_style(doc, label, T_ID_ARROW)
 
   doc
 }
