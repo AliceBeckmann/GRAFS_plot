@@ -1,11 +1,4 @@
-html_escape <- function(text) {
-  text <- gsub("<", "&lt;", text, fixed = TRUE)
-  text <- gsub(">", "&gt;", text, fixed = TRUE)
-  text
-}
-
 remove_id <- function(doc, id) {
-  id <- html_escape(id)
   cells <- xml2::xml_find_all(
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{id}')]")
@@ -56,24 +49,26 @@ change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
 }
 
 change_style <- function(doc, id, identifier, value, T_ID_ARROW) {
-  id <- html_escape(id)
   cell <- xml2::xml_find_all(
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{id}')]")
   )
+
   if (length(cell) == 0) {
     warning(paste("Cell with id", id, "not found"))
     return(doc)
   }
+
   style <- xml2::xml_attr(cell, "style")
   style_parts <- strsplit(style, ";")[[1]]
   style_kv <- lapply(style_parts, function(x) strsplit(x, "=")[[1]])
+
   style_list <- setNames(
     sapply(style_kv, function(x) if (length(x) > 1) x[2] else ""),
     sapply(style_kv, function(x) x[1])
   )
+
   if (identifier == "strokeWidth") {
-    # TODO: make cleaner
     if (!is.numeric(value)) {
       value <- 1
     }
@@ -81,32 +76,32 @@ change_style <- function(doc, id, identifier, value, T_ID_ARROW) {
   } else {
     style_list[identifier] <- as.character(value)
   }
+
   new_style <- paste(
     paste(names(style_list), style_list, sep = "="),
     collapse = ";"
   )
   xml2::xml_set_attr(cell, "style", new_style)
+
   if (value == 0 && identifier == "strokeWidth") {
     doc <- remove_id(doc, id)
-    # TODO: revise
-    # aux <- T_ID_ARROW$associated_label_id[T_ID_ARROW$id == id]
-    # if (!is.na(aux)) {
-    #   doc <- remove_id(doc, aux)
-    # }
   }
+
   doc
 }
 
+
 replace_label_in_value <- function(doc, label, value) {
-  label <- html_escape(label)
   cells <- xml2::xml_find_all(
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
   )
+
   if (length(cells) == 0) {
     warning(paste("No mxCell found with label:", label))
     return(doc)
   }
+
   for (cell in cells) {
     cell_value <- xml2::xml_attr(cell, "value")
     if (!is.na(cell_value) && grepl(label, cell_value, fixed = TRUE)) {
@@ -114,8 +109,10 @@ replace_label_in_value <- function(doc, label, value) {
       xml2::xml_set_attr(cell, "value", new_value)
     }
   }
+
   doc
 }
+
 
 crea_png <- function(exe_draw_io, xml_in, png_out) {
   p <- process$new(exe_draw_io, c("-x", paste0("-o", png_out), xml_in))
@@ -147,13 +144,9 @@ year_info <- function(YEARS) {
 prepare_data <- function(XLSX_INPUTS) {
   d <- openxlsx::read.xlsx(XLSX_INPUTS)
   d <- unique(d)
-
-  # TODO: handle these cleanly, so annoying
-  d$label <- gsub("&lt;", "<", d$label)
-  d$label <- gsub("&gt;", ">", d$label)
-
   subset(d, !grepl("WIDTH_MAX", label))
 }
+
 
 prepare_directories <- function(PATH_OUTPUTS) {
   dir.create(PATH_OUTPUTS, showWarnings = FALSE)
@@ -162,19 +155,19 @@ prepare_directories <- function(PATH_OUTPUTS) {
 }
 
 augment_crplndtotn <- function(dact, dactch = NULL, PLOT_CHANGE = FALSE) {
-  x <- which(dact$label == "<CRPLNDTOTN>")
+  x <- which(dact$label == "CRPLNDTOTN")
   if (length(x) == 0) {
     xx <- subset(
       dact,
       is.element(
         label,
-        c("<PERrN>", "<PERiN>", "<NPErN>", "<NPEiN>", "<GREHN>")
+        c("PERrN", "PERiN", "NPErN", "NPEiN", "GREHN")
       )
     )
     xx$data <- as.numeric(xx$data)
     xxx <- xx %>%
       group_by(province, year, align, arrowColor) %>%
-      summarise(label = "<CRPLNDTOTN>", data = sum(data))
+      summarise(label = "CRPLNDTOTN", data = sum(data))
     xxx <- xxx[, c("province", "year", "label", "data", "align", "arrowColor")]
     dact <- rbind(dact, xxx)
     if (PLOT_CHANGE && !is.null(dactch)) {
@@ -224,9 +217,9 @@ process_label <- function(
 ) {
   arrowcolor <- unique(x$arrowColor)
   value_change <- NA
-  if (lact == "<PROVINCE_NAME>") {
+  if (lact == "PROVINCE_NAME") {
     mean_val <- x$data[1]
-  } else if (lact == "<YEAR>") {
+  } else if (lact == "YEAR") {
     mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
   } else {
     x$data <- as.numeric(x$data)
@@ -294,7 +287,7 @@ initialize_xml_doc <- function(
   if (PLOT_CHANGE) {
     doc <- change_style(
       doc,
-      "<YEARCHANGE>",
+      "YEARCHANGE",
       "fillColor",
       INCREASE_COLOR,
       T_ID_ARROW
@@ -314,7 +307,7 @@ initialize_xml_doc <- function(
   }
   doc <- change_style(
     doc,
-    "<WIDTH_MAX>",
+    "WIDTH_MAX",
     "strokeWidth",
     VAL_MAX_WIDTH,
     T_ID_ARROW
