@@ -14,21 +14,20 @@ library(readtext)
 library(XML)
 library(processx)
 library(dplyr)
-library(openxlsx)
 # library(GRAFS)
 
 run_basic_example <- function() {
   # Get the inputs from the demo data from the GRAFS package
-  XLSX_INPUTS <- system.file(
+  CSV_INPUTS <- system.file(
     "extdata",
-    "GRAFS_spain_data.xlsx",
-    # "GRAFS_alfredo.xlsx",
+    "GRAFS_spain_data.csv",
+    # "GRAFS_alfredo.csv",
     package = "GRAFS"
   )
   XML_BASE <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   TABLA_ID_XML <- system.file(
     "extdata",
-    "GRAFS_arrows_ids.xlsx",
+    "GRAFS_arrows_ids.csv",
     package = "GRAFS"
   )
 
@@ -52,13 +51,13 @@ run_basic_example <- function() {
   PATH_OUTPUTS <- "./GRAFS_test-outputs/"
 
   create_GRAFS(
-    XLSX_INPUTS,
+    CSV_INPUTS,
     PATH_OUTPUTS,
     XML_BASE,
     TABLA_ID_XML,
     DRAW_IO_EXE,
-    # MAX_WIDTH_ARROWS = 1,
-    # VAL_MAX_WIDTH = 10,
+    MAX_WIDTH_ARROWS = 15,
+    VAL_MAX_WIDTH = 10000,
     # REGIONS = "spain",
     # PERIODS = c("2011:2015-1990:1994"),
     REGIONS = "Albacete",

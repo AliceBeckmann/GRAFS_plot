@@ -6,6 +6,7 @@ remove_id <- function(doc, id) {
   if (length(cells) == 0) {
     warning(paste("No mxCell found with id:", id))
   }
+  xml2::xml_remove(cells)
   doc
 }
 
@@ -48,31 +49,45 @@ change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
   doc
 }
 
-change_arrow_style <- function(doc, label, T_ID_ARROW) {
-  if (label == "&lt;AN_LS_OTH&gt;") {
-    browser()
+change_style <- function(
+  doc,
+  label,
+  identifier,
+  value,
+  T_ID_ARROW,
+  MAX_WIDTH_ARROWS,
+  VAL_MAX_WIDTH
+) {
+  cell <- xml2::xml_find_all(
+    doc,
+    stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
+  )
+  if (length(cell) == 0) {
+    warning(paste("Cell with label", label, "not found"))
+    return(doc)
   }
 
   id <- T_ID_ARROW |>
     dplyr::filter(label == !!label) |>
     dplyr::pull(id)
 
-  doc
-}
+  if (length(id) == 0) {
+    warning(paste("Arrow for label", label, "not found"))
+    return(doc)
+  }
 
-change_text_style <- function(doc, label, identifier, value) {
   cell <- xml2::xml_find_all(
     doc,
-    stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
+    stringr::str_glue(".//mxCell[@id='{id}']")
   )
-
   if (length(cell) == 0) {
-    warning(paste("Cell with label", label, "not found"))
+    warning(paste("Cell for arrow label", label, "not found"))
     return(doc)
   }
 
   style <- xml2::xml_attr(cell, "style")
-  style_parts <- strsplit(style, ";")[[1]]
+  style_parts <- stringr::str_split_1(style, ";")
+  # style_parts <- strsplit(style, ";")[[1]]
   style_kv <- lapply(style_parts, function(x) strsplit(x, "=")[[1]])
 
   style_list <- setNames(
@@ -83,11 +98,14 @@ change_text_style <- function(doc, label, identifier, value) {
   if (identifier == "strokeWidth") {
     if (!is.numeric(value)) {
       value <- 1
+    } else {
+      value <- min(value, VAL_MAX_WIDTH) * MAX_WIDTH_ARROWS / VAL_MAX_WIDTH
     }
     style_list[identifier] <- as.character(round(max(1, value)))
   } else {
     style_list[identifier] <- as.character(value)
   }
+  # style_list[identifier] <- "10"
 
   new_style <- paste(
     paste(names(style_list), style_list, sep = "="),
@@ -107,19 +125,13 @@ change_text_style <- function(doc, label, identifier, value) {
   doc
 }
 
-change_style <- function(doc, label, identifier, value, T_ID_ARROW) {
-  doc <- change_text_style(doc, label, identifier, value)
-  doc <- change_arrow_style(doc, label, T_ID_ARROW)
-
-  doc
-}
-
-
 replace_label_in_value <- function(doc, label, value) {
   cells <- xml2::xml_find_all(
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
   )
+  xml2::xml_find_all(doc, ".//mxCell[@id='q2Cn5xlCuZCPZr2LdWGl-28']") |>
+    xml2::xml_attr("value")
 
   if (length(cells) == 0) {
     warning(paste("No mxCell found with label:", label))
@@ -136,7 +148,6 @@ replace_label_in_value <- function(doc, label, value) {
 
   doc
 }
-
 
 crea_png <- function(exe_draw_io, xml_in, png_out) {
   p <- process$new(exe_draw_io, c("-x", paste0("-o", png_out), xml_in))
@@ -165,8 +176,8 @@ year_info <- function(YEARS) {
   return(label)
 }
 
-prepare_data <- function(XLSX_INPUTS) {
-  d <- openxlsx::read.xlsx(XLSX_INPUTS)
+prepare_data <- function(CSV_INPUTS) {
+  d <- readr::read_csv(CSV_INPUTS, show_col_types = FALSE)
   d <- unique(d)
   subset(d, !grepl("WIDTH_MAX", label))
 }
@@ -179,19 +190,19 @@ prepare_directories <- function(PATH_OUTPUTS) {
 }
 
 augment_crplndtotn <- function(dact, dactch = NULL, PLOT_CHANGE = FALSE) {
-  x <- which(dact$label == "CRPLNDTOTN")
+  x <- which(dact$label == "{CRPLNDTOTN}")
   if (length(x) == 0) {
     xx <- subset(
       dact,
       is.element(
         label,
-        c("PERrN", "PERiN", "NPErN", "NPEiN", "GREHN")
+        c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
       )
     )
     xx$data <- as.numeric(xx$data)
     xxx <- xx %>%
       group_by(province, year, align, arrowColor) %>%
-      summarise(label = "CRPLNDTOTN", data = sum(data))
+      summarise(label = "{CRPLNDTOTN}", data = sum(data))
     xxx <- xxx[, c("province", "year", "label", "data", "align", "arrowColor")]
     dact <- rbind(dact, xxx)
     if (PLOT_CHANGE && !is.null(dactch)) {
@@ -237,13 +248,15 @@ process_label <- function(
   PLOT_CHANGE,
   INCREASE_COLOR,
   DECREASE_COLOR,
-  T_ID_ARROW
+  T_ID_ARROW,
+  MAX_WIDTH_ARROWS,
+  VAL_MAX_WIDTH
 ) {
   arrowcolor <- unique(x$arrowColor)
   value_change <- NA
-  if (lact == "PROVINCE_NAME") {
+  if (lact == "{PROVINCE_NAME}") {
     mean_val <- x$data[1]
-  } else if (lact == "YEAR") {
+  } else if (lact == "{YEAR}") {
     mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
   } else {
     x$data <- as.numeric(x$data)
@@ -257,9 +270,25 @@ process_label <- function(
       if (mean(xch$data) == 0) value_change <- NA
     }
   }
-  doc <- change_style(doc, lact, "strokeWidth", mean_val, T_ID_ARROW)
+  doc <- change_style(
+    doc,
+    lact,
+    "strokeWidth",
+    mean_val,
+    T_ID_ARROW,
+    MAX_WIDTH_ARROWS,
+    VAL_MAX_WIDTH
+  )
   if (!is.na(arrowcolor)) {
-    doc <- change_style(doc, lact, "fillColor", arrowcolor, T_ID_ARROW)
+    doc <- change_style(
+      doc,
+      lact,
+      "fillColor",
+      arrowcolor,
+      T_ID_ARROW,
+      MAX_WIDTH_ARROWS,
+      VAL_MAX_WIDTH
+    )
   }
   if (PLOT_CHANGE && !is.na(value_change)) {
     doc <- change_style(
@@ -267,7 +296,9 @@ process_label <- function(
       lact,
       "fillColor",
       ifelse(value_change > 0, INCREASE_COLOR, DECREASE_COLOR),
-      T_ID_ARROW
+      T_ID_ARROW,
+      MAX_WIDTH_ARROWS,
+      VAL_MAX_WIDTH
     )
     doc <- change_bubble_size(doc, lact, abs(value_change), 12)
   }
@@ -305,16 +336,19 @@ initialize_xml_doc <- function(
   INCREASE_COLOR,
   T_ID_ARROW,
   LABELch,
-  VAL_MAX_WIDTH
+  VAL_MAX_WIDTH,
+  MAX_WIDTH_ARROWS
 ) {
   doc <- xml2::read_xml(XML_BASE)
   if (PLOT_CHANGE) {
     doc <- change_style(
       doc,
-      "YEARCHANGE",
+      "{YEARCHANGE}",
       "fillColor",
       INCREASE_COLOR,
-      T_ID_ARROW
+      T_ID_ARROW,
+      MAX_WIDTH_ARROWS,
+      VAL_MAX_WIDTH
     )
   }
   LABELch_flat <- unlist(LABELch)
@@ -325,16 +359,20 @@ initialize_xml_doc <- function(
         LABELch[[ii]]$old,
         "fillColor",
         LABELch[[ii]]$new,
-        T_ID_ARROW
+        T_ID_ARROW,
+        MAX_WIDTH_ARROWS,
+        VAL_MAX_WIDTH
       )
     }
   }
   doc <- change_style(
     doc,
-    "WIDTH_MAX",
+    "{WIDTH_MAX}",
     "strokeWidth",
     VAL_MAX_WIDTH,
-    T_ID_ARROW
+    T_ID_ARROW,
+    MAX_WIDTH_ARROWS,
+    VAL_MAX_WIDTH
   )
   doc
 }
@@ -349,7 +387,9 @@ process_labels_loop <- function(
   PLOT_CHANGE,
   INCREASE_COLOR,
   DECREASE_COLOR,
-  T_ID_ARROW
+  T_ID_ARROW,
+  MAX_WIDTH_ARROWS,
+  VAL_MAX_WIDTH
 ) {
   for (lact in unique(dact$label)) {
     x <- dact[dact$label == lact, ]
@@ -373,7 +413,9 @@ process_labels_loop <- function(
       PLOT_CHANGE,
       INCREASE_COLOR,
       DECREASE_COLOR,
-      T_ID_ARROW
+      T_ID_ARROW,
+      MAX_WIDTH_ARROWS,
+      VAL_MAX_WIDTH
     )
   }
   doc
@@ -395,7 +437,8 @@ process_period_region <- function(
   T_ID_ARROW,
   UNITch,
   LABELch,
-  OVERWRITE
+  OVERWRITE,
+  MAX_WIDTH_ARROWS
 ) {
   period_info <- parse_period(tPER)
   PLOT_CHANGE <- period_info$PLOT_CHANGE
@@ -442,7 +485,8 @@ process_period_region <- function(
       INCREASE_COLOR,
       T_ID_ARROW,
       LABELch,
-      VAL_MAX_WIDTH
+      VAL_MAX_WIDTH,
+      MAX_WIDTH_ARROWS
     )
     doc <- process_labels_loop(
       doc,
@@ -454,19 +498,22 @@ process_period_region <- function(
       PLOT_CHANGE,
       INCREASE_COLOR,
       DECREASE_COLOR,
-      T_ID_ARROW
+      T_ID_ARROW,
+      MAX_WIDTH_ARROWS,
+      VAL_MAX_WIDTH
     )
     if (!PLOT_CHANGE) {
       doc <- remove_change_bubbles(doc)
     }
     writeLines(as.character(doc), FACT_XML)
+    print(FACT_XML)
     crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
     print(paste0("GRAFS creado!"))
   }
 }
 
 create_GRAFS <- function(
-  XLSX_INPUTS,
+  CSV_INPUTS,
   PATH_OUTPUTS,
   XML_BASE,
   TABLA_ID_XML,
@@ -484,9 +531,9 @@ create_GRAFS <- function(
   LABELch = NA,
   DATOch = NA
 ) {
-  T_ID_ARROW <- openxlsx::read.xlsx(TABLA_ID_XML)
+  T_ID_ARROW <- readr::read_csv(TABLA_ID_XML, show_col_types = FALSE)
   prepare_directories(PATH_OUTPUTS)
-  d <- prepare_data(XLSX_INPUTS)
+  d <- prepare_data(CSV_INPUTS)
   for (PERIOD in seq_along(PERIODS)) {
     tPER <- PERIODS[PERIOD]
     process_period_region(
@@ -505,7 +552,8 @@ create_GRAFS <- function(
       T_ID_ARROW,
       UNITch,
       LABELch,
-      OVERWRITE
+      OVERWRITE,
+      MAX_WIDTH_ARROWS
     )
   }
 }
