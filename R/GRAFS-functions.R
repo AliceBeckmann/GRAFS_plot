@@ -304,61 +304,9 @@ process_label <- function(
   doc
 }
 
-select_region_data <- function(d, PROV_ACT, YEARS, YEARS_CHANGE, PLOT_CHANGE) {
-  dact <- subset(d, province == PROV_ACT & is.element(year, YEARS))
-  dactch <- if (PLOT_CHANGE) {
-    subset(d, province == PROV_ACT & is.element(year, YEARS_CHANGE))
-  } else {
-    NULL
-  }
-  list(dact = dact, dactch = dactch)
-}
-
-initialize_xml_doc <- function(
-  XML_BASE,
-  PLOT_CHANGE,
-  INCREASE_COLOR,
-  T_ID_ARROW,
-  LABELch,
-  VAL_MAX_WIDTH,
-  MAX_WIDTH_ARROWS
-) {
-  doc <- xml2::read_xml(XML_BASE)
-  if (PLOT_CHANGE) {
-    doc <- change_style(
-      doc,
-      "{YEARCHANGE}",
-      "fillColor",
-      INCREASE_COLOR,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-  }
-  LABELch_flat <- unlist(LABELch)
-  if (!any(is.na(LABELch_flat))) {
-    for (ii in seq_along(LABELch)) {
-      doc <- change_style(
-        doc,
-        LABELch[[ii]]$old,
-        "fillColor",
-        LABELch[[ii]]$new,
-        T_ID_ARROW,
-        MAX_WIDTH_ARROWS,
-        VAL_MAX_WIDTH
-      )
-    }
-  }
-  doc <- change_style(
-    doc,
-    "{WIDTH_MAX}",
-    "strokeWidth",
-    VAL_MAX_WIDTH,
-    T_ID_ARROW,
-    MAX_WIDTH_ARROWS,
-    VAL_MAX_WIDTH
-  )
-  doc
+select_region_data <- function(d, PROV_ACT, YEARS) {
+  d |>
+    dplyr::filter(province == {{ PROV_ACT }}, year %in% {{ YEARS }})
 }
 
 process_labels_loop <- function(
@@ -429,62 +377,47 @@ process_period_region <- function(
   PLOT_CHANGE <- !is.null(YEARS_CHANGE)
 
   for (PROV_ACT in REGIONS) {
-    region_data <- select_region_data(
-      d,
-      PROV_ACT,
-      YEARS,
-      YEARS_CHANGE,
-      PLOT_CHANGE
-    )
-    dact <- region_data$dact
-    dactch <- region_data$dactch
+    dact <- select_region_data(d, PROV_ACT, YEARS)
+    dacth <- select_region_data(d, PROV_ACT, YEARS_CHANGE)
 
-    aug <- augment_crplndtotn(dact, dactch, PLOT_CHANGE)
-    dact <- aug$dact
-    dactch <- aug$dactch
+    # TODO: fix
+    # this is just a for a summarization label, fix others first
+    # aug <- augment_crplndtotn(dact, dactch, PLOT_CHANGE)
+    # dact <- aug$dact
+    # dactch <- aug$dactch
 
-    changes <- apply_unit_label_changes(dact, dactch, UNITch, LABELch)
-    dact <- changes$dact
-    dactch <- changes$dactch
+    # TODO: fix
+    # this is just to allow unit and label changes, fix later
+    # changes <- apply_unit_label_changes(dact, dactch, UNITch, LABELch)
+    # dact <- changes$dact
+    # dactch <- changes$dactch
 
-    FACT_XML <- paste0(
+    FACT_XML <- file.path(
       PATH_OUTPUTS,
-      "xml/",
-      "GRAFS_",
-      PROV_ACT,
-      "_P",
-      PERIOD,
-      "_MEAN_",
-      year_info(YEARS),
-      ".xml"
+      "xml",
+      stringr::str_glue(
+        "GRAFS_{PROV_ACT}_P{PERIOD}_MEAN_{year_info(YEARS)}.xml"
+      )
     )
-    if (file.exists(FACT_XML) & !OVERWRITE) {
+
+    if (file.exists(FACT_XML) && !OVERWRITE) {
       next
     }
 
-    doc <- initialize_xml_doc(
-      XML_BASE,
-      PLOT_CHANGE,
-      INCREASE_COLOR,
-      T_ID_ARROW,
-      LABELch,
-      VAL_MAX_WIDTH,
-      MAX_WIDTH_ARROWS
-    )
-    doc <- process_labels_loop(
-      doc,
-      dact,
-      dactch,
-      YEARS,
-      YEARS_CHANGE,
-      DECIMALES_XML,
-      PLOT_CHANGE,
-      INCREASE_COLOR,
-      DECREASE_COLOR,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
+    doc <- xml2::read_xml(XML_BASE) |>
+      process_labels_loop(
+        dact,
+        dactch,
+        YEARS,
+        YEARS_CHANGE,
+        DECIMALES_XML,
+        PLOT_CHANGE,
+        INCREASE_COLOR,
+        DECREASE_COLOR,
+        T_ID_ARROW,
+        MAX_WIDTH_ARROWS,
+        VAL_MAX_WIDTH
+      )
     if (!PLOT_CHANGE) {
       doc <- remove_change_bubbles(doc)
     }
