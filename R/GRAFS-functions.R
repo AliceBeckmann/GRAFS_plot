@@ -130,8 +130,6 @@ replace_label_in_value <- function(doc, label, value) {
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
   )
-  xml2::xml_find_all(doc, ".//mxCell[@id='q2Cn5xlCuZCPZr2LdWGl-28']") |>
-    xml2::xml_attr("value")
 
   if (length(cells) == 0) {
     warning(paste("No mxCell found with label:", label))
@@ -506,7 +504,6 @@ process_period_region <- function(
       doc <- remove_change_bubbles(doc)
     }
     writeLines(as.character(doc), FACT_XML)
-    print(FACT_XML)
     crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
     print(paste0("GRAFS creado!"))
   }
