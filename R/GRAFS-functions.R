@@ -304,20 +304,6 @@ process_label <- function(
   doc
 }
 
-parse_period <- function(tPER) {
-  if (grepl("-", tPER)) {
-    PLOT_CHANGE <- TRUE
-    aux <- str_split(tPER, "-")[[1]]
-    YEARS <- as.numeric(aux[1])
-    YEARS_CHANGE <- as.numeric(aux[2])
-  } else {
-    PLOT_CHANGE <- FALSE
-    YEARS <- stringr::str_split_1(tPER, ":") |> as.integer()
-    YEARS_CHANGE <- NULL
-  }
-  list(PLOT_CHANGE = PLOT_CHANGE, YEARS = YEARS, YEARS_CHANGE = YEARS_CHANGE)
-}
-
 select_region_data <- function(d, PROV_ACT, YEARS, YEARS_CHANGE, PLOT_CHANGE) {
   dact <- subset(d, province == PROV_ACT & is.element(year, YEARS))
   dactch <- if (PLOT_CHANGE) {
@@ -438,10 +424,9 @@ process_period_region <- function(
   OVERWRITE,
   MAX_WIDTH_ARROWS
 ) {
-  period_info <- parse_period(tPER)
-  PLOT_CHANGE <- period_info$PLOT_CHANGE
-  YEARS <- period_info$YEARS
-  YEARS_CHANGE <- period_info$YEARS_CHANGE
+  YEARS <- tPER$years
+  YEARS_CHANGE <- tPER$prev_years
+  PLOT_CHANGE <- !is.null(YEARS_CHANGE)
 
   for (PROV_ACT in REGIONS) {
     region_data <- select_region_data(
@@ -531,8 +516,9 @@ create_GRAFS <- function(
   T_ID_ARROW <- readr::read_csv(TABLA_ID_XML, show_col_types = FALSE)
   prepare_directories(PATH_OUTPUTS)
   d <- prepare_data(CSV_INPUTS)
+
   for (PERIOD in seq_along(PERIODS)) {
-    tPER <- PERIODS[PERIOD]
+    tPER <- PERIODS[[PERIOD]]
     process_period_region(
       PERIOD,
       tPER,

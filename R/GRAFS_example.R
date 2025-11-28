@@ -58,9 +58,10 @@ run_basic_example <- function() {
     DRAW_IO_EXE,
     MAX_WIDTH_ARROWS = 15,
     VAL_MAX_WIDTH = 10000,
-    # REGIONS = "spain",
-    # PERIODS = c("2011:2015-1990:1994"),
     REGIONS = "Albacete",
-    PERIODS = c("1930:1931")
+    PERIODS = list(
+      list(years = 1930:1931)
+      # list(years = 1930:1931, prev_years = 1920:1921)
+    )
   )
 }
