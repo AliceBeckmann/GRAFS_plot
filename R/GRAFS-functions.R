@@ -10,7 +10,11 @@ remove_id <- function(doc, id) {
   doc
 }
 
-remove_change_bubbles <- function(doc) {
+maybe_remove_change_bubbles <- function(doc, years_change) {
+  if (!is.null(years_change)) {
+    return(doc)
+  }
+
   bubbles <- xml2::xml_find_all(doc, ".//mxCell[contains(@style, 'ellipse')]")
   if (length(bubbles) == 0) {
     warning("No ellipse bubbles found")
@@ -128,6 +132,10 @@ replace_label_in_value <- function(doc, label, value) {
   if (is.na(label)) {
     return(doc)
   }
+  # TODO: cleaner implementation, currently for no {YEARCHANGE}
+  if (is.na(value)) {
+    value <- ""
+  }
 
   cells <- xml2::xml_find_all(
     doc,
@@ -157,6 +165,10 @@ crea_png <- function(exe_draw_io, xml_in, png_out) {
 }
 
 year_info <- function(YEARS) {
+  if (length(YEARS) == 0) {
+    return(NA)
+  }
+
   label <- YEARS[1]
   for (i in 2:length(YEARS)) {
     if (YEARS[i] != (YEARS[i - 1] + 1)) {
@@ -231,6 +243,17 @@ apply_styles_to_label <- function(
     )
 }
 
+replace_region_label <- function(doc, region) {
+  doc |>
+    replace_label_in_value("{PROVINCE_NAME}", region)
+}
+
+replace_year_labels <- function(doc, years, years_change) {
+  doc |>
+    replace_label_in_value("{YEAR}", year_info(years)) |>
+    replace_label_in_value("{YEARCHANGE}", year_info(years_change))
+}
+
 create_regional_grafs <- function(
   df,
   region,
@@ -259,6 +282,9 @@ create_regional_grafs <- function(
         apply_styles_to_label(template, row, max_width_arrows, val_max_width)
       }
     ) |>
+    maybe_remove_change_bubbles(years_change) |>
+    replace_region_label(region) |>
+    replace_year_labels(years, years_change) |>
     xml2::write_xml(output_xml_path)
 
   crea_png(
@@ -274,6 +300,7 @@ compute_means <- function(df, years, years_change) {
     dplyr::filter(year %in% c(years, years_change)) |>
     dplyr::mutate(
       period = ifelse(year %in% years, "current", "previous"),
+      period = factor(period, c("current", "previous")),
       data = as.numeric(data)
     ) |>
     dplyr::summarise(
@@ -283,7 +310,8 @@ compute_means <- function(df, years, years_change) {
     tidyr::pivot_wider(
       names_from = "period",
       values_from = avg,
-      names_prefix = "avg_"
+      names_prefix = "avg_",
+      names_expand = TRUE
     ) |>
     dplyr::mutate(avg_change = avg_current / avg_previous * 100 - 100)
 }
