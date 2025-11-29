@@ -18,18 +18,13 @@ library(dplyr)
 
 run_basic_example <- function() {
   # Get the inputs from the demo data from the GRAFS package
-  CSV_INPUTS <- system.file(
-    "extdata",
-    "GRAFS_spain_data.csv",
-    # "GRAFS_alfredo.csv",
-    package = "GRAFS"
-  )
   XML_BASE <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
-  TABLA_ID_XML <- system.file(
+  arrow_ids <- system.file(
     "extdata",
     "GRAFS_arrows_ids.csv",
     package = "GRAFS"
-  )
+  ) |>
+    readr::read_csv()
 
   # Mac path
   # chmod +x /Applications/draw.io.app/Contents/MacOS/draw.io
@@ -50,18 +45,23 @@ run_basic_example <- function() {
   # Figures will be generated in the current path
   PATH_OUTPUTS <- "./GRAFS_test-outputs/"
 
-  create_GRAFS(
-    CSV_INPUTS,
-    PATH_OUTPUTS,
-    XML_BASE,
-    TABLA_ID_XML,
-    DRAW_IO_EXE,
-    MAX_WIDTH_ARROWS = 15,
-    VAL_MAX_WIDTH = 10000,
-    REGIONS = "Albacete",
-    PERIODS = list(
-      list(years = 1930:1931)
-      # list(years = 1930:1931, prev_years = 1920:1921)
+  system.file(
+    "extdata",
+    "GRAFS_spain_data.csv",
+    # "GRAFS_alfredo.csv",
+    package = "GRAFS"
+  ) |>
+    readr::read_csv() |>
+    dplyr::filter(!label %in% c("{YEAR}", "{PROVINCE_NAME}", "{WIDTH_MAX}")) |>
+    create_GRAFS(
+      PATH_OUTPUTS,
+      XML_BASE,
+      arrow_ids,
+      DRAW_IO_EXE,
+      max_width_arrows = 15,
+      val_max_width = 10000,
+      regions = c("Albacete"),
+      years = 1930:1931,
+      years_change = 1920:1921
     )
-  )
 }
