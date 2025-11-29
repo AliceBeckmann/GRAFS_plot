@@ -60,7 +60,7 @@ run_basic_example <- function() {
       DRAW_IO_EXE,
       max_width_arrows = 15,
       val_max_width = 10000,
-      regions = c("Albacete"),
+      regions = c("Albacete", "Zamora"),
       years = 1930:1931,
       years_change = 1920:1921
     )
