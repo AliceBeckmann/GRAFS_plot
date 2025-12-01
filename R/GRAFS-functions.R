@@ -10,7 +10,11 @@ remove_id <- function(doc, id) {
   doc
 }
 
-remove_change_bubbles <- function(doc) {
+maybe_remove_change_bubbles <- function(doc, years_change) {
+  if (!is.null(years_change)) {
+    return(doc)
+  }
+
   bubbles <- xml2::xml_find_all(doc, ".//mxCell[contains(@style, 'ellipse')]")
   if (length(bubbles) == 0) {
     warning("No ellipse bubbles found")
@@ -20,32 +24,36 @@ remove_change_bubbles <- function(doc) {
 }
 
 change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
-  cells <- xml2::xml_find_all(doc, ".//mxCell[@value]")
-  found <- FALSE
-  for (cell in cells) {
-    cell_value <- xml2::xml_attr(cell, "value")
-    if (!is.na(cell_value) && cell_value == label) {
-      style <- xml2::xml_attr(cell, "style")
-      style_parts <- strsplit(style, ";")[[1]]
-      style_kv <- lapply(style_parts, function(x) strsplit(x, "=")[[1]])
-      style_list <- setNames(
-        sapply(style_kv, function(x) if (length(x) > 1) x[2] else ""),
-        sapply(style_kv, function(x) x[1])
-      )
-      style_list["fontSize"] <- as.character(NEW_TEXT_SIZE)
-      style_list["width"] <- as.character(NEW_SIZE)
-      style_list["height"] <- as.character(NEW_SIZE)
-      new_style <- paste(
-        paste(names(style_list), style_list, sep = "="),
-        collapse = ";"
-      )
-      xml2::xml_set_attr(cell, "style", new_style)
-      found <- TRUE
-    }
+  # TODO: fix for labels without bubble
+  if (is.na(label)) {
+    return(doc)
   }
-  if (!found) {
-    warning(paste("No mxCell found with value:", label))
+
+  cell <- xml2::xml_find_all(
+    doc,
+    stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
+  )
+
+  if (length(cell) == 0) {
+    warning(paste("Cell with label", label, "not found"))
+    return(doc)
   }
+
+  xml2::xml_set_attr(
+    cell,
+    "style",
+    stringr::str_replace(
+      xml2::xml_attr(cell, "style"),
+      "fontSize=\\d+",
+      stringr::str_glue("fontSize={NEW_TEXT_SIZE}")
+    )
+  )
+
+  NEW_SIZE <- max(NEW_SIZE, 40)
+  mx_geometry <- xml2::xml_find_first(cell, ".//mxGeometry")
+  xml2::xml_set_attr(mx_geometry, "width", NEW_SIZE)
+  xml2::xml_set_attr(mx_geometry, "height", NEW_SIZE)
+
   doc
 }
 
@@ -54,7 +62,7 @@ change_style <- function(
   label,
   identifier,
   value,
-  T_ID_ARROW,
+  id,
   MAX_WIDTH_ARROWS,
   VAL_MAX_WIDTH
 ) {
@@ -67,11 +75,7 @@ change_style <- function(
     return(doc)
   }
 
-  id <- T_ID_ARROW |>
-    dplyr::filter(label == !!label) |>
-    dplyr::pull(id)
-
-  if (length(id) == 0) {
+  if (is.na(id)) {
     warning(paste("Arrow for label", label, "not found"))
     return(doc)
   }
@@ -87,7 +91,6 @@ change_style <- function(
 
   style <- xml2::xml_attr(cell, "style")
   style_parts <- stringr::str_split_1(style, ";")
-  # style_parts <- strsplit(style, ";")[[1]]
   style_kv <- lapply(style_parts, function(x) strsplit(x, "=")[[1]])
 
   style_list <- setNames(
@@ -105,7 +108,6 @@ change_style <- function(
   } else {
     style_list[identifier] <- as.character(value)
   }
-  # style_list[identifier] <- "10"
 
   new_style <- paste(
     paste(names(style_list), style_list, sep = "="),
@@ -126,6 +128,15 @@ change_style <- function(
 }
 
 replace_label_in_value <- function(doc, label, value) {
+  # TODO: fix for bubble changes
+  if (is.na(label)) {
+    return(doc)
+  }
+  # TODO: cleaner implementation, currently for no {YEARCHANGE}
+  if (is.na(value)) {
+    value <- ""
+  }
+
   cells <- xml2::xml_find_all(
     doc,
     stringr::str_glue(".//mxCell[contains(@value, '{label}')]")
@@ -154,6 +165,10 @@ crea_png <- function(exe_draw_io, xml_in, png_out) {
 }
 
 year_info <- function(YEARS) {
+  if (length(YEARS) == 0) {
+    return(NA)
+  }
+
   label <- YEARS[1]
   for (i in 2:length(YEARS)) {
     if (YEARS[i] != (YEARS[i - 1] + 1)) {
@@ -173,13 +188,6 @@ year_info <- function(YEARS) {
   }
   return(label)
 }
-
-prepare_data <- function(CSV_INPUTS) {
-  d <- readr::read_csv(CSV_INPUTS, show_col_types = FALSE)
-  d <- unique(d)
-  subset(d, !grepl("WIDTH_MAX", label))
-}
-
 
 prepare_directories <- function(PATH_OUTPUTS) {
   dir.create(PATH_OUTPUTS, showWarnings = FALSE)
@@ -212,314 +220,114 @@ augment_crplndtotn <- function(dact, dactch = NULL, PLOT_CHANGE = FALSE) {
   list(dact = dact, dactch = dactch)
 }
 
-apply_unit_label_changes <- function(dact, dactch, UNITch, LABELch) {
-  UNITch_flat <- unlist(UNITch)
-  if (!any(is.na(UNITch_flat))) {
-    for (ii in seq_along(UNITch)) {
-      dact$data[dact$label == UNITch[[ii]]$old] <- as.numeric(dact$data[
-        dact$label == UNITch[[ii]]$old
-      ]) /
-        UNITch[[ii]]$div
-      dact$label[dact$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
-      dactch$label[dactch$label == UNITch[[ii]]$old] <- UNITch[[ii]]$new
-    }
-  }
-  LABELch_flat <- unlist(LABELch)
-  if (!any(is.na(LABELch_flat))) {
-    for (ii in seq_along(LABELch)) {
-      # This only changes XML styles, not data
-      # The actual style change is done in XML doc preparation
-      next
-    }
-  }
-  list(dact = dact, dactch = dactch)
+apply_styles_to_label <- function(
+  template,
+  row,
+  max_width_arrows,
+  val_max_width
+) {
+  template |>
+    change_style(
+      row$label,
+      "strokeWidth",
+      row$avg_current,
+      row$id,
+      max_width_arrows,
+      val_max_width
+    ) |>
+    replace_label_in_value(row$label, round(row$avg_current)) |>
+    change_bubble_size(row$labelchange, abs(row$avg_change), 12) |>
+    replace_label_in_value(
+      row$labelchange,
+      stringr::str_glue("{round(row$avg_change)} %")
+    )
 }
 
-process_label <- function(
-  doc,
-  x,
-  xch,
-  lact,
-  YEARS,
-  YEARS_CHANGE,
-  DECIMALES_XML,
-  PLOT_CHANGE,
-  INCREASE_COLOR,
-  DECREASE_COLOR,
-  T_ID_ARROW,
-  MAX_WIDTH_ARROWS,
-  VAL_MAX_WIDTH
+replace_region_label <- function(doc, region) {
+  doc |>
+    replace_label_in_value("{PROVINCE_NAME}", region)
+}
+
+replace_year_labels <- function(doc, years, years_change) {
+  doc |>
+    replace_label_in_value("{YEAR}", year_info(years)) |>
+    replace_label_in_value("{YEARCHANGE}", year_info(years_change))
+}
+
+create_regional_grafs <- function(
+  df,
+  region,
+  years,
+  years_change,
+  grafs_template,
+  max_width_arrows,
+  val_max_width,
+  output_path,
+  draw_io_exe
 ) {
-  arrowcolor <- unique(x$arrowColor)
-  value_change <- NA
-  if (lact == "{PROVINCE_NAME}") {
-    mean_val <- x$data[1]
-  } else if (lact == "{YEAR}") {
-    mean_val <- paste0("mean_", min(YEARS), "-", max(YEARS))
-  } else {
-    x$data <- as.numeric(x$data)
-    mean_val <- round(mean(x$data), DECIMALES_XML)
-    if (mean_val == 0) {
-      mean_val <- round(mean(x$data), DECIMALES_XML + 1)
-    }
-    if (PLOT_CHANGE && !is.null(xch)) {
-      xch$data <- as.numeric(xch$data)
-      value_change <- mean(x$data) * 100 / mean(xch$data) - 100
-      if (mean(xch$data) == 0) value_change <- NA
-    }
-  }
-  doc <- change_style(
-    doc,
-    lact,
-    "strokeWidth",
-    mean_val,
-    T_ID_ARROW,
-    MAX_WIDTH_ARROWS,
-    VAL_MAX_WIDTH
+  print(region)
+  doc <- xml2::read_xml(grafs_template)
+
+  output_xml_path <- file.path(
+    output_path,
+    "xml",
+    stringr::str_glue("GRAFS_{region}_MEAN_{year_info(years)}.xml")
   )
-  if (!is.na(arrowcolor)) {
-    doc <- change_style(
-      doc,
-      lact,
-      "fillColor",
-      arrowcolor,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-  }
-  if (PLOT_CHANGE && !is.na(value_change)) {
-    doc <- change_style(
-      doc,
-      lact,
-      "fillColor",
-      ifelse(value_change > 0, INCREASE_COLOR, DECREASE_COLOR),
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-    doc <- change_bubble_size(doc, lact, abs(value_change), 12)
-  }
-  doc <- replace_label_in_value(doc, lact, mean_val)
-  doc
-}
 
-parse_period <- function(tPER) {
-  if (grepl("-", tPER)) {
-    PLOT_CHANGE <- TRUE
-    aux <- str_split(tPER, "-")[[1]]
-    YEARS <- as.numeric(aux[1])
-    YEARS_CHANGE <- as.numeric(aux[2])
-  } else {
-    PLOT_CHANGE <- FALSE
-    YEARS <- stringr::str_split_1(tPER, ":") |> as.integer()
-    YEARS_CHANGE <- NULL
-  }
-  list(PLOT_CHANGE = PLOT_CHANGE, YEARS = YEARS, YEARS_CHANGE = YEARS_CHANGE)
-}
+  df |>
+    purrr::pmap(list) |>
+    purrr::reduce(
+      .init = doc,
+      function(template, row) {
+        apply_styles_to_label(template, row, max_width_arrows, val_max_width)
+      }
+    ) |>
+    maybe_remove_change_bubbles(years_change) |>
+    replace_region_label(region) |>
+    replace_year_labels(years, years_change) |>
+    xml2::write_xml(output_xml_path)
 
-select_region_data <- function(d, PROV_ACT, YEARS, YEARS_CHANGE, PLOT_CHANGE) {
-  dact <- subset(d, province == PROV_ACT & is.element(year, YEARS))
-  dactch <- if (PLOT_CHANGE) {
-    subset(d, province == PROV_ACT & is.element(year, YEARS_CHANGE))
-  } else {
-    NULL
-  }
-  list(dact = dact, dactch = dactch)
-}
-
-initialize_xml_doc <- function(
-  XML_BASE,
-  PLOT_CHANGE,
-  INCREASE_COLOR,
-  T_ID_ARROW,
-  LABELch,
-  VAL_MAX_WIDTH,
-  MAX_WIDTH_ARROWS
-) {
-  doc <- xml2::read_xml(XML_BASE)
-  if (PLOT_CHANGE) {
-    doc <- change_style(
-      doc,
-      "{YEARCHANGE}",
-      "fillColor",
-      INCREASE_COLOR,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-  }
-  LABELch_flat <- unlist(LABELch)
-  if (!any(is.na(LABELch_flat))) {
-    for (ii in seq_along(LABELch)) {
-      doc <- change_style(
-        doc,
-        LABELch[[ii]]$old,
-        "fillColor",
-        LABELch[[ii]]$new,
-        T_ID_ARROW,
-        MAX_WIDTH_ARROWS,
-        VAL_MAX_WIDTH
-      )
-    }
-  }
-  doc <- change_style(
-    doc,
-    "{WIDTH_MAX}",
-    "strokeWidth",
-    VAL_MAX_WIDTH,
-    T_ID_ARROW,
-    MAX_WIDTH_ARROWS,
-    VAL_MAX_WIDTH
+  crea_png(
+    draw_io_exe,
+    output_xml_path,
+    str_replace_all(output_xml_path, "xml", "png")
   )
-  doc
+  cli::cli_alert_info("GRAFS created!")
 }
 
-process_labels_loop <- function(
-  doc,
-  dact,
-  dactch,
-  YEARS,
-  YEARS_CHANGE,
-  DECIMALES_XML,
-  PLOT_CHANGE,
-  INCREASE_COLOR,
-  DECREASE_COLOR,
-  T_ID_ARROW,
-  MAX_WIDTH_ARROWS,
-  VAL_MAX_WIDTH
-) {
-  for (lact in unique(dact$label)) {
-    x <- dact[dact$label == lact, ]
-    xch <- if (PLOT_CHANGE) dactch[dactch$label == lact, ] else NULL
-    if (length(x[, 1]) != length(YEARS)) {
-      warning("something_is_missing_check")
-    }
-    if (
-      PLOT_CHANGE && !is.null(xch) && length(xch[, 1]) != length(YEARS_CHANGE)
-    ) {
-      warning("something_is_missing_check")
-    }
-    doc <- process_label(
-      doc,
-      x,
-      xch,
-      lact,
-      YEARS,
-      YEARS_CHANGE,
-      DECIMALES_XML,
-      PLOT_CHANGE,
-      INCREASE_COLOR,
-      DECREASE_COLOR,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-  }
-  doc
-}
-
-process_period_region <- function(
-  PERIOD,
-  tPER,
-  PERIODS,
-  REGIONS,
-  d,
-  XML_BASE,
-  PATH_OUTPUTS,
-  DRAW_IO_EXE,
-  DECIMALES_XML,
-  VAL_MAX_WIDTH,
-  INCREASE_COLOR,
-  DECREASE_COLOR,
-  T_ID_ARROW,
-  UNITch,
-  LABELch,
-  OVERWRITE,
-  MAX_WIDTH_ARROWS
-) {
-  period_info <- parse_period(tPER)
-  PLOT_CHANGE <- period_info$PLOT_CHANGE
-  YEARS <- period_info$YEARS
-  YEARS_CHANGE <- period_info$YEARS_CHANGE
-
-  for (PROV_ACT in REGIONS) {
-    region_data <- select_region_data(
-      d,
-      PROV_ACT,
-      YEARS,
-      YEARS_CHANGE,
-      PLOT_CHANGE
-    )
-    dact <- region_data$dact
-    dactch <- region_data$dactch
-
-    aug <- augment_crplndtotn(dact, dactch, PLOT_CHANGE)
-    dact <- aug$dact
-    dactch <- aug$dactch
-
-    changes <- apply_unit_label_changes(dact, dactch, UNITch, LABELch)
-    dact <- changes$dact
-    dactch <- changes$dactch
-
-    FACT_XML <- paste0(
-      PATH_OUTPUTS,
-      "xml/",
-      "GRAFS_",
-      PROV_ACT,
-      "_P",
-      PERIOD,
-      "_MEAN_",
-      year_info(YEARS),
-      ".xml"
-    )
-    if (file.exists(FACT_XML) & !OVERWRITE) {
-      next
-    }
-
-    doc <- initialize_xml_doc(
-      XML_BASE,
-      PLOT_CHANGE,
-      INCREASE_COLOR,
-      T_ID_ARROW,
-      LABELch,
-      VAL_MAX_WIDTH,
-      MAX_WIDTH_ARROWS
-    )
-    doc <- process_labels_loop(
-      doc,
-      dact,
-      dactch,
-      YEARS,
-      YEARS_CHANGE,
-      DECIMALES_XML,
-      PLOT_CHANGE,
-      INCREASE_COLOR,
-      DECREASE_COLOR,
-      T_ID_ARROW,
-      MAX_WIDTH_ARROWS,
-      VAL_MAX_WIDTH
-    )
-    if (!PLOT_CHANGE) {
-      doc <- remove_change_bubbles(doc)
-    }
-    writeLines(as.character(doc), FACT_XML)
-    crea_png(DRAW_IO_EXE, FACT_XML, str_replace_all(FACT_XML, "xml", "png"))
-    print(paste0("GRAFS creado!"))
-  }
+compute_means <- function(df, years, years_change) {
+  df |>
+    dplyr::filter(year %in% c(years, years_change)) |>
+    dplyr::mutate(
+      period = ifelse(year %in% years, "current", "previous"),
+      period = factor(period, c("current", "previous")),
+      data = as.numeric(data)
+    ) |>
+    dplyr::summarise(
+      avg = mean(data),
+      .by = c("province", "label", "period")
+    ) |>
+    tidyr::pivot_wider(
+      names_from = "period",
+      values_from = avg,
+      names_prefix = "avg_",
+      names_expand = TRUE
+    ) |>
+    dplyr::mutate(avg_change = avg_current / avg_previous * 100 - 100)
 }
 
 create_GRAFS <- function(
-  CSV_INPUTS,
-  PATH_OUTPUTS,
-  XML_BASE,
-  TABLA_ID_XML,
-  DRAW_IO_EXE,
-  REGIONS,
-  PERIODS,
+  df,
+  output_path,
+  grafs_template,
+  arrow_ids,
+  draw_io_exe,
+  regions,
+  years,
+  years_change = NULL,
   DECIMALES_XML = 0,
-  MAX_WIDTH_ARROWS = 25,
-  VAL_MAX_WIDTH = 1000,
+  max_width_arrows = 25,
+  val_max_width = 1000,
   INCREASE_COLOR = "#97cde5",
   DECREASE_COLOR = "#a9d77f",
   OVERWRITE = TRUE,
@@ -528,29 +336,24 @@ create_GRAFS <- function(
   LABELch = NA,
   DATOch = NA
 ) {
-  T_ID_ARROW <- readr::read_csv(TABLA_ID_XML, show_col_types = FALSE)
-  prepare_directories(PATH_OUTPUTS)
-  d <- prepare_data(CSV_INPUTS)
-  for (PERIOD in seq_along(PERIODS)) {
-    tPER <- PERIODS[PERIOD]
-    process_period_region(
-      PERIOD,
-      tPER,
-      PERIODS,
-      REGIONS,
-      d,
-      XML_BASE,
-      PATH_OUTPUTS,
-      DRAW_IO_EXE,
-      DECIMALES_XML,
-      VAL_MAX_WIDTH,
-      INCREASE_COLOR,
-      DECREASE_COLOR,
-      T_ID_ARROW,
-      UNITch,
-      LABELch,
-      OVERWRITE,
-      MAX_WIDTH_ARROWS
+  prepare_directories(output_path)
+
+  df |>
+    dplyr::filter(province %in% regions) |>
+    compute_means(years, years_change) |>
+    dplyr::left_join(arrow_ids) |>
+    dplyr::group_by(province) |>
+    dplyr::group_walk(
+      .f = ~ create_regional_grafs(
+        .x,
+        .y$province,
+        years,
+        years_change,
+        grafs_template,
+        max_width_arrows,
+        val_max_width,
+        output_path,
+        draw_io_exe
+      )
     )
-  }
 }
