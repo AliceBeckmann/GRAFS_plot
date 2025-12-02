@@ -58,10 +58,10 @@ run_basic_example <- function() {
       XML_BASE,
       arrow_ids,
       DRAW_IO_EXE,
-      max_width_arrows = 15,
-      val_max_width = 10000,
-      regions = c("Albacete", "Zamora"),
-      years = 1930:1931,
-      years_change = 1920:1921
+      max_width_arrows = 20,
+      val_max_width = 50,
+      regions = c("Zaragoza"),
+      years = 2011:2015,
+      years_change = 1990:1994
     )
 }

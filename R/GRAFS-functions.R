@@ -49,7 +49,8 @@ change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
     )
   )
 
-  NEW_SIZE <- max(NEW_SIZE, 40)
+  NEW_SIZE <- min(sqrt(NEW_SIZE) * 20, 60)
+
   mx_geometry <- xml2::xml_find_first(cell, ".//mxGeometry")
   xml2::xml_set_attr(mx_geometry, "width", NEW_SIZE)
   xml2::xml_set_attr(mx_geometry, "height", NEW_SIZE)
@@ -64,7 +65,8 @@ change_style <- function(
   value,
   id,
   MAX_WIDTH_ARROWS,
-  VAL_MAX_WIDTH
+  VAL_MAX_WIDTH,
+  MIN_WIDTH_ARROWS = 1
 ) {
   cell <- xml2::xml_find_all(
     doc,
@@ -104,7 +106,12 @@ change_style <- function(
     } else {
       value <- min(value, VAL_MAX_WIDTH) * MAX_WIDTH_ARROWS / VAL_MAX_WIDTH
     }
-    style_list[identifier] <- as.character(round(max(1, value)))
+
+    style_list[identifier] <- as.character(
+      round(
+        max(MIN_WIDTH_ARROWS, min(MAX_WIDTH_ARROWS, value))
+      )
+    )
   } else {
     style_list[identifier] <- as.character(value)
   }
@@ -206,8 +213,8 @@ augment_crplndtotn <- function(dact, dactch = NULL, PLOT_CHANGE = FALSE) {
       )
     )
     xx$data <- as.numeric(xx$data)
-    xxx <- xx %>%
-      group_by(province, year, align, arrowColor) %>%
+    xxx <- xx |>
+      group_by(province, year, align, arrowColor) |>
       summarise(label = "{CRPLNDTOTN}", data = sum(data))
     xxx <- xxx[, c("province", "year", "label", "data", "align", "arrowColor")]
     dact <- rbind(dact, xxx)
@@ -224,7 +231,8 @@ apply_styles_to_label <- function(
   template,
   row,
   max_width_arrows,
-  val_max_width
+  val_max_width,
+  min_width_arrows
 ) {
   template |>
     change_style(
@@ -233,9 +241,17 @@ apply_styles_to_label <- function(
       row$avg_current,
       row$id,
       max_width_arrows,
-      val_max_width
+      val_max_width,
+      MIN_WIDTH_ARROWS = min_width_arrows
     ) |>
-    replace_label_in_value(row$label, round(row$avg_current)) |>
+    replace_label_in_value(
+      row$label,
+      if (row$avg_current < 1) {
+        format(round(row$avg_current, 2), nsmall = 2)
+      } else {
+        as.character(round(row$avg_current))
+      }
+    ) |>
     change_bubble_size(row$labelchange, abs(row$avg_change), 12) |>
     replace_label_in_value(
       row$labelchange,
@@ -262,6 +278,7 @@ create_regional_grafs <- function(
   grafs_template,
   max_width_arrows,
   val_max_width,
+  min_width_arrows,
   output_path,
   draw_io_exe
 ) {
@@ -279,7 +296,13 @@ create_regional_grafs <- function(
     purrr::reduce(
       .init = doc,
       function(template, row) {
-        apply_styles_to_label(template, row, max_width_arrows, val_max_width)
+        apply_styles_to_label(
+          template,
+          row,
+          max_width_arrows,
+          val_max_width,
+          min_width_arrows
+        )
       }
     ) |>
     maybe_remove_change_bubbles(years_change) |>
@@ -327,7 +350,8 @@ create_GRAFS <- function(
   years_change = NULL,
   DECIMALES_XML = 0,
   max_width_arrows = 25,
-  val_max_width = 1000,
+  val_max_width = 100,
+  min_width_arrows = 3,
   INCREASE_COLOR = "#97cde5",
   DECREASE_COLOR = "#a9d77f",
   OVERWRITE = TRUE,
@@ -352,6 +376,7 @@ create_GRAFS <- function(
         grafs_template,
         max_width_arrows,
         val_max_width,
+        min_width_arrows,
         output_path,
         draw_io_exe
       )
