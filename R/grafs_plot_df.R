@@ -149,13 +149,6 @@ create_grafs_plot_df <- function() {
     dplyr::select(-data_num) |>
     dplyr::ungroup()
 
-  #Path needs to be adjusted by user, until the final version can be uploaded
-  #to SACO
-  readr::write_csv(
-    df_final,
-    "C:/PhD/GRAFS_plot/inst/extdata/GRAFS_spain_data.csv"
-  )
-
   df_final
 }
 
@@ -646,13 +639,16 @@ create_grafs_plot_df <- function() {
       `{HAGRASS}` = sum(
         Area_ygpit_ha[
           LandUse %in%
-            c("Other", "Pasture_Shrubland")
+            c("Forest_low", "Forest_high", "Dehesa", "Other", "Pasture_Shrubland")
         ],
         na.rm = TRUE
       ),
       `{GRASSMha}` = `{HAGRASS}` / 1e6,
       `{HACULT}` = sum(Area_ygpit_ha[LandUse == "Cropland"], na.rm = TRUE),
       `{KM2_PROVINCE}` = sum(Area_ygpit_ha, na.rm = TRUE) / 100,
+      # So far crop and semi-natural surpluses were used from the n_balance dataset. 
+      # I am not sure if this approach is better or calculating these surpluses by the inputs
+      # and outputs of this dataset?
       `{CROP_SURPLUS}` = sum(Surplus[LandUse == "Cropland"], na.rm = TRUE),
       `{GRASS_SURPLUS}` = sum(
         Surplus[
@@ -679,7 +675,6 @@ create_grafs_plot_df <- function() {
       align = "L"
     )
 
-  # --- Combine ---
   df_all <- dplyr::bind_rows(
     df_land,
     df_n_soil_inputs
@@ -705,7 +700,6 @@ create_grafs_plot_df <- function() {
 #' `align`.
 #'
 #' @keywords internal
-
 #'
 #' @param prov_destiny_df A data frame containing production and destiny
 #' information.
@@ -1090,7 +1084,7 @@ create_grafs_plot_df <- function() {
     dplyr::mutate(
       label = "{POPULATIONM}",
       data = Pop_Mpeop_yg,
-      align = "L" # falls du rechts willst → "R"
+      align = "L" 
     ) |>
     dplyr::select(province, year, label, data, align)
 
