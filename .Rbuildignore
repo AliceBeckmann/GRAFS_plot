@@ -2,3 +2,5 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.Rprofile$
+^GRAFS_test-outputs$
