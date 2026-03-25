@@ -10,7 +10,14 @@ parse_style <- function(style) {
 }
 
 build_style <- function(style_list) {
-  paste(paste(names(style_list), style_list, sep = "="), collapse = ";")
+  parts <- vapply(seq_along(style_list), function(i) {
+    if (nzchar(style_list[i])) {
+      paste0(names(style_list)[i], "=", style_list[i])
+    } else {
+      names(style_list)[i]
+    }
+  }, character(1))
+  paste(parts, collapse = ";")
 }
 
 remove_id <- function(doc, id) {
@@ -77,10 +84,14 @@ change_style <- function(doc, label, identifier, value,
   style_list <- parse_style(xml2::xml_attr(cell, "style"))
 
   if (identifier == "strokeWidth") {
-    if (!is.numeric(value)) {
+    if (!is.numeric(value) || is.na(value)) {
       value <- 1
     } else {
       value <- min(value, val_max_width) * max_width_arrows / val_max_width
+    }
+    if (value == 0) {
+      doc <- remove_id(doc, label)
+      return(doc)
     }
     style_list[identifier] <- as.character(round(max(1, value)))
   } else {
@@ -88,10 +99,6 @@ change_style <- function(doc, label, identifier, value,
   }
 
   xml2::xml_set_attr(cell, "style", build_style(style_list))
-
-  if (value == 0 && identifier == "strokeWidth") {
-    doc <- remove_id(doc, label)
-  }
 
   doc
 }
@@ -140,6 +147,7 @@ create_png <- function(drawio_exe, xml_path, png_path,
     warning("draw.io export failed for: ", xml_path,
             if (length(stderr_out) > 0)
               paste0("\n  ", paste(stderr_out, collapse = "\n  ")))
+    return(invisible(png_path))
   }
 
   message("Created: ", png_path)
@@ -272,9 +280,17 @@ process_period_region <- function(period_idx, period, regions, d,
   years <- period$years
   years_change <- period$prev_years
   plot_change <- !is.null(years_change)
+  outputs <- character()
 
   for (region in regions) {
     dact <- select_region_data(d, region, years)
+
+    if (nrow(dact) == 0) {
+      warning("No data found for region '", region,
+              "' in years ", min(years), "-", max(years), ". Skipping.")
+      next
+    }
+
     dactch <- select_region_data(d, region, years_change)
 
     filename <- sprintf(
@@ -284,6 +300,7 @@ process_period_region <- function(period_idx, period, regions, d,
     png_out <- file.path(path_outputs, "png", paste0(filename, ".png"))
 
     if (file.exists(xml_out) && !overwrite) {
+      outputs <- c(outputs, png_out)
       next
     }
 
@@ -298,9 +315,11 @@ process_period_region <- function(period_idx, period, regions, d,
       doc <- remove_change_bubbles(doc)
     }
 
-    writeLines(as.character(doc), xml_out)
+    writeLines(as.character(doc), xml_out, useBytes = TRUE)
     create_png(drawio_exe, xml_out, png_out)
+    outputs <- c(outputs, png_out)
   }
+  outputs
 }
 
 # Exported functions ----------------------------------------------------------
@@ -347,8 +366,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   (default \code{"#a9d77f"}).
 #' @param overwrite Overwrite existing output files (default \code{TRUE}).
 #'
-#' @return Invisible \code{NULL}. Called for side effects: creates XML and PNG
-#'   files in \code{path_outputs}.
+#' @return Invisible character vector of output PNG file paths.
 #'
 #' @references
 #' Billen, G., et al. (2014). \emph{Regional Studies}.
@@ -432,8 +450,9 @@ create_GRAFS <- function(csv_inputs,
   prepare_directories(path_outputs)
   d <- prepare_data(csv_inputs)
 
+  outputs <- character()
   for (i in seq_along(periods)) {
-    process_period_region(
+    paths <- process_period_region(
       period_idx = i,
       period = periods[[i]],
       regions = regions,
@@ -449,7 +468,8 @@ create_GRAFS <- function(csv_inputs,
       overwrite = overwrite,
       max_width_arrows = max_width_arrows
     )
+    outputs <- c(outputs, paths)
   }
 
-  invisible(NULL)
+  invisible(outputs)
 }

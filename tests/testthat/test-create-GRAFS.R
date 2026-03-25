@@ -250,6 +250,54 @@ test_that("create_GRAFS handles multiple periods", {
   expect_true(any(grepl("P2", xml_files)))
 })
 
+test_that("create_GRAFS returns output PNG paths", {
+  drawio <- find_drawio()
+  skip_if(is.null(drawio), "draw.io not installed")
+
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
+  xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+  ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
+  out <- file.path(tempdir(), paste0("grafs_retval_", Sys.getpid()))
+  on.exit(unlink(out, recursive = TRUE), add = TRUE)
+
+  result <- suppressWarnings(create_GRAFS(
+    csv_inputs = csv, path_outputs = out, xml_base = xml,
+    arrows_csv = ids, drawio_exe = drawio,
+    regions = "Albacete",
+    periods = list(list(years = 1930:1931))
+  ))
+
+  expect_type(result, "character")
+  expect_length(result, 1)
+  expect_true(grepl("\\.png$", result))
+  expect_true(file.exists(result))
+})
+
+test_that("create_GRAFS warns for nonexistent region", {
+  drawio <- find_drawio()
+  skip_if(is.null(drawio), "draw.io not installed")
+
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
+  xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+  ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
+  out <- file.path(tempdir(), paste0("grafs_noregion_", Sys.getpid()))
+  on.exit(unlink(out, recursive = TRUE), add = TRUE)
+
+  expect_warning(
+    create_GRAFS(
+      csv_inputs = csv, path_outputs = out, xml_base = xml,
+      arrows_csv = ids, drawio_exe = drawio,
+      regions = "ZZZ_NoSuchPlace",
+      periods = list(list(years = 1930:1931))
+    ),
+    "No data found for region"
+  )
+
+  # No files should be produced
+  xml_files <- list.files(file.path(out, "xml"), pattern = "\\.xml$")
+  expect_length(xml_files, 0)
+})
+
 test_that("create_GRAFS validates non-character regions", {
   csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")

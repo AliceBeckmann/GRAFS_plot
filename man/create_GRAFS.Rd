@@ -67,8 +67,7 @@ computing percentage changes. Example:
 \item{overwrite}{Overwrite existing output files (default \code{TRUE}).}
 }
 \value{
-Invisible \code{NULL}. Called for side effects: creates XML and PNG
-files in \code{path_outputs}.
+Invisible character vector of output PNG file paths.
 }
 \description{
 Generate GRAFS (General Representation of Agro-Food Systems) diagrams

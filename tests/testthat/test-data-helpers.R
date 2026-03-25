@@ -222,7 +222,7 @@ test_that("process_labels_loop warns on mismatched change row counts", {
 
 # --- create_png ---
 
-test_that("create_png warns on failed export", {
+test_that("create_png warns on failed export and does not say Created", {
   # Create a script that exits with non-zero status
   fake_exe <- tempfile(fileext = if (.Platform$OS.type == "windows") ".bat" else "")
   on.exit(unlink(fake_exe), add = TRUE)
@@ -239,10 +239,21 @@ test_that("create_png warns on failed export", {
   on.exit(unlink(c(tmp_xml, tmp_png)), add = TRUE)
   writeLines("<x/>", tmp_xml)
 
+  # Should warn about failure
+  msgs <- character()
   expect_warning(
-    GRAFS:::create_png(fake_exe, tmp_xml, tmp_png),
+    withCallingHandlers(
+      GRAFS:::create_png(fake_exe, tmp_xml, tmp_png),
+      message = function(m) {
+        msgs <<- c(msgs, conditionMessage(m))
+        invokeRestart("muffleMessage")
+      }
+    ),
     "draw.io export failed"
   )
+
+  # Should NOT print "Created:" on failure
+  expect_false(any(grepl("Created:", msgs)))
 })
 
 test_that("create_png returns png path invisibly", {

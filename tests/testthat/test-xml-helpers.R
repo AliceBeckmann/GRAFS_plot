@@ -257,6 +257,31 @@ test_that("change_style handles negative value as non-numeric", {
   expect_equal(style[["strokeWidth"]], "1")
 })
 
+test_that("change_style handles NA value without crashing", {
+  doc <- make_test_doc()
+  # NA should be treated like non-numeric (fallback to strokeWidth=1)
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_A}", "strokeWidth", NA_real_,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+
+  arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  expect_equal(style[["strokeWidth"]], "1")
+})
+
+test_that("change_style handles NaN value without crashing", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_A}", "strokeWidth", NaN,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+
+  arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  expect_equal(style[["strokeWidth"]], "1")
+})
+
 test_that("change_style can modify different arrows independently", {
   doc <- make_test_doc()
   doc <- GRAFS:::change_style(

@@ -74,3 +74,27 @@ test_that("round-trip preserves trailing-semicolon styles (minus trailing ;)", {
   expect_equal(parsed[["strokeWidth"]], "5")
   expect_equal(parsed[["fillColor"]], "#FF0000")
 })
+
+test_that("build_style preserves bare keys without adding =", {
+  # draw.io uses bare keys like "rounded", "dashed", "html" without values
+  style <- "rounded;strokeWidth=5;html=1;dashed"
+  parsed <- GRAFS:::parse_style(style)
+  rebuilt <- GRAFS:::build_style(parsed)
+
+  # Bare keys should NOT get "=" appended
+  expect_equal(rebuilt, "rounded;strokeWidth=5;html=1;dashed")
+  expect_false(grepl("rounded=", rebuilt, fixed = TRUE))
+  expect_false(grepl("dashed=", rebuilt, fixed = TRUE))
+})
+
+test_that("build_style handles all bare keys", {
+  style_list <- c(rounded = "", dashed = "")
+  result <- GRAFS:::build_style(style_list)
+  expect_equal(result, "rounded;dashed")
+})
+
+test_that("build_style handles mix of bare and valued keys", {
+  style_list <- c(rounded = "", strokeWidth = "5", dashed = "", fillColor = "#FF0000")
+  result <- GRAFS:::build_style(style_list)
+  expect_equal(result, "rounded;strokeWidth=5;dashed;fillColor=#FF0000")
+})
