@@ -130,6 +130,7 @@ create_png <- function(drawio_exe, xml_path, png_path) {
 }
 
 year_info <- function(years) {
+  if (length(years) == 0) return("")
   if (length(years) == 1) return(as.character(years))
 
   label <- as.character(years[1])
@@ -168,6 +169,8 @@ process_label <- function(doc, x, xch, label, years, years_change,
   arrowcolor <- if (length(arrowcolors) > 0) arrowcolors[1] else NA
   value_change <- NA
 
+  is_text_label <- label %in% c("{PROVINCE_NAME}", "{YEAR}")
+
   if (label == "{PROVINCE_NAME}") {
     mean_val <- x$data[1]
   } else if (label == "{YEAR}") {
@@ -186,25 +189,27 @@ process_label <- function(doc, x, xch, label, years, years_change,
     }
   }
 
-  doc <- change_style(
-    doc, label, "strokeWidth", mean_val,
-    t_id_arrow, max_width_arrows, val_max_width
-  )
-
-  if (!is.na(arrowcolor)) {
+  if (!is_text_label) {
     doc <- change_style(
-      doc, label, "fillColor", arrowcolor,
+      doc, label, "strokeWidth", mean_val,
       t_id_arrow, max_width_arrows, val_max_width
     )
-  }
 
-  if (plot_change && !is.na(value_change)) {
-    doc <- change_style(
-      doc, label, "fillColor",
-      ifelse(value_change > 0, increase_color, decrease_color),
-      t_id_arrow, max_width_arrows, val_max_width
-    )
-    doc <- change_bubble_size(doc, label, abs(value_change), 12)
+    if (!is.na(arrowcolor)) {
+      doc <- change_style(
+        doc, label, "fillColor", arrowcolor,
+        t_id_arrow, max_width_arrows, val_max_width
+      )
+    }
+
+    if (plot_change && !is.na(value_change)) {
+      doc <- change_style(
+        doc, label, "fillColor",
+        ifelse(value_change > 0, increase_color, decrease_color),
+        t_id_arrow, max_width_arrows, val_max_width
+      )
+      doc <- change_bubble_size(doc, label, abs(value_change), 12)
+    }
   }
 
   doc <- replace_label_in_value(doc, label, mean_val)
@@ -378,6 +383,26 @@ create_GRAFS <- function(csv_inputs,
                          increase_color = "#97cde5",
                          decrease_color = "#a9d77f",
                          overwrite = TRUE) {
+  if (!is.character(regions) || length(regions) == 0) {
+    stop("'regions' must be a non-empty character vector")
+  }
+  if (!is.list(periods) || length(periods) == 0) {
+    stop("'periods' must be a non-empty list")
+  }
+  for (idx in seq_along(periods)) {
+    if (is.null(periods[[idx]]$years)) {
+      stop("Period ", idx, " is missing required 'years' element")
+    }
+  }
+  if (!file.exists(csv_inputs)) {
+    stop("Input CSV file not found: ", csv_inputs)
+  }
+  if (!file.exists(xml_base)) {
+    stop("XML template not found: ", xml_base)
+  }
+  if (!file.exists(arrows_csv)) {
+    stop("Arrow IDs CSV not found: ", arrows_csv)
+  }
   if (!file.exists(drawio_exe)) {
     stop(
       "draw.io executable not found at: ", drawio_exe,
