@@ -5,3 +5,5 @@
 ^\.Rprofile$
 ^GRAFS_test-outputs$
 ^README\.md$
+^\.github$
+^LICENSE\.md$
