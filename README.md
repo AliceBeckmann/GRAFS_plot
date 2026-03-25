@@ -97,6 +97,18 @@ The input CSV must have these columns:
 
 The package includes example data for Spanish provinces (`GRAFS_spain_data.csv`).
 
+## Validating inputs
+
+Before generating diagrams, check that your data, template, and arrow mappings
+are consistent:
+
+```r
+validate_inputs(csv, ids, xml, regions = "Albacete")
+```
+
+This reports matched labels, unmapped data, missing regions, and data quality
+issues.
+
 ## Key parameters
 
 | Parameter | Default | Description |

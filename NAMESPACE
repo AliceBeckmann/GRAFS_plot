@@ -3,3 +3,4 @@
 export(check_setup)
 export(create_GRAFS)
 export(find_drawio)
+export(validate_inputs)
