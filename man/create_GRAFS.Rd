@@ -25,7 +25,7 @@ create_GRAFS(
 columns: \code{province}, \code{year}, \code{label}, \code{data},
 \code{align}, and optionally \code{arrowColor}. The package includes
 example data accessible via
-\code{system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")}.}
+\code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")}.}
 
 \item{path_outputs}{Directory for output files. Created automatically if
 it does not exist. Subdirectories \code{xml/} and \code{png/} are created
@@ -81,7 +81,7 @@ and exports the result as PNG images using the draw.io CLI.
 }
 \examples{
 \dontrun{
-csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
 xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 drawio <- find_drawio()

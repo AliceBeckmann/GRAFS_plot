@@ -1,5 +1,5 @@
 test_that("validate_inputs returns structured result", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -15,7 +15,7 @@ test_that("validate_inputs returns structured result", {
 })
 
 test_that("validate_inputs detects all arrow mappings", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -27,7 +27,7 @@ test_that("validate_inputs detects all arrow mappings", {
 })
 
 test_that("validate_inputs checks regions", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -50,7 +50,7 @@ test_that("validate_inputs stops for missing files", {
 })
 
 test_that("validate_inputs finds template placeholders", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 

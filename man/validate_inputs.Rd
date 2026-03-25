@@ -38,7 +38,7 @@ files before generating diagrams.
 }
 \examples{
 \dontrun{
-csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
 xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 

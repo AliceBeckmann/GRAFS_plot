@@ -18,7 +18,7 @@ test_that("create_GRAFS stops for missing CSV", {
 test_that("create_GRAFS stops for missing XML template", {
   expect_error(
     create_GRAFS(
-      csv_inputs = system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS"),
+      csv_inputs = system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS"),
       path_outputs = tempdir(),
       xml_base = "/nonexistent.xml",
       arrows_csv = system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS"),
@@ -33,7 +33,7 @@ test_that("create_GRAFS stops for missing XML template", {
 test_that("create_GRAFS stops for missing arrows CSV", {
   expect_error(
     create_GRAFS(
-      csv_inputs = system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS"),
+      csv_inputs = system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS"),
       path_outputs = tempdir(),
       xml_base = system.file("templates", "grafs_auto_v18.xml", package = "GRAFS"),
       arrows_csv = "/nonexistent.csv",
@@ -46,7 +46,7 @@ test_that("create_GRAFS stops for missing arrows CSV", {
 })
 
 test_that("create_GRAFS stops for missing drawio", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -65,7 +65,7 @@ test_that("create_GRAFS stops for missing drawio", {
 })
 
 test_that("create_GRAFS stops for empty regions", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -81,7 +81,7 @@ test_that("create_GRAFS stops for empty regions", {
 })
 
 test_that("create_GRAFS stops for empty periods", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -97,7 +97,7 @@ test_that("create_GRAFS stops for empty periods", {
 })
 
 test_that("create_GRAFS stops for period missing years", {
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -118,7 +118,7 @@ test_that("create_GRAFS produces XML output when drawio is available", {
   drawio <- find_drawio()
   skip_if(is.null(drawio), "draw.io not installed")
 
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
   out <- file.path(tempdir(), paste0("grafs_integration_", Sys.getpid()))
@@ -145,7 +145,7 @@ test_that("create_GRAFS handles multiple regions", {
   drawio <- find_drawio()
   skip_if(is.null(drawio), "draw.io not installed")
 
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
   out <- file.path(tempdir(), paste0("grafs_multi_", Sys.getpid()))
@@ -166,7 +166,7 @@ test_that("create_GRAFS respects overwrite=FALSE", {
   drawio <- find_drawio()
   skip_if(is.null(drawio), "draw.io not installed")
 
-  csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
   out <- file.path(tempdir(), paste0("grafs_overwrite_", Sys.getpid()))

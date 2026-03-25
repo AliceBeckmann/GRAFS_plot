@@ -44,7 +44,7 @@ check_setup()
 drawio <- find_drawio()
 
 # Use bundled example data
-csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
 xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
@@ -95,7 +95,7 @@ The input CSV must have these columns:
 | `align`     | Text alignment: `"L"` or `"R"` |
 | `arrowColor`| Optional hex color override (e.g., `#FF0000`), or `NA` |
 
-The package includes example data for Spanish provinces (`GRAFS_spain_data.csv`).
+The package includes example data for Spanish provinces (`GRAFS_spain_data.csv.gz`).
 
 ## Validating inputs
 

@@ -26,7 +26,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+#' csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
 #' xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 #' ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 #'
@@ -113,7 +113,8 @@ validate_inputs <- function(csv_inputs, arrows_csv, xml_base, regions = NULL) {
       ok <- FALSE
       message("\nWARNING - Requested regions not found in data:")
       message("  ", paste(missing_regions, collapse = ", "))
-      message("  Available: ", paste(head(sort(available), 10), collapse = ", "),
+      shown <- sort(available)[seq_len(min(10, length(available)))]
+      message("  Available: ", paste(shown, collapse = ", "),
               if (length(available) > 10) paste0(" ... (", length(available), " total)"))
     } else {
       message("\nRegion check: all ", length(regions), " requested regions found in data")

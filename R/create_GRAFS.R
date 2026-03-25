@@ -2,11 +2,11 @@
 
 parse_style <- function(style) {
   parts <- strsplit(style, ";")[[1]]
+  parts <- parts[nzchar(parts)]
   kv <- lapply(parts, function(x) strsplit(x, "=")[[1]])
-  setNames(
-    vapply(kv, function(x) if (length(x) > 1) x[2] else "", character(1)),
-    vapply(kv, function(x) x[1], character(1))
-  )
+  values <- vapply(kv, function(x) if (length(x) > 1) x[2] else "", character(1))
+  names(values) <- vapply(kv, function(x) x[1], character(1))
+  values
 }
 
 build_style <- function(style_list) {
@@ -301,7 +301,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   columns: \code{province}, \code{year}, \code{label}, \code{data},
 #'   \code{align}, and optionally \code{arrowColor}. The package includes
 #'   example data accessible via
-#'   \code{system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")}.
+#'   \code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")}.
 #' @param path_outputs Directory for output files. Created automatically if
 #'   it does not exist. Subdirectories \code{xml/} and \code{png/} are created
 #'   inside.
@@ -342,7 +342,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #'
 #' @examples
 #' \dontrun{
-#' csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+#' csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
 #' xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 #' ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 #' drawio <- find_drawio()

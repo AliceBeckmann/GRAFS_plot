@@ -108,7 +108,7 @@ check_setup <- function(drawio_path = NULL) {
   # -- Bundled data --
   message("Checking bundled data files...")
   files <- list(
-    "Example data" = system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS"),
+    "Example data" = system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS"),
     "Arrow IDs" = system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS"),
     "Template" = system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   )
