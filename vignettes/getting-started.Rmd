@@ -1,0 +1,306 @@
+---
+title: "Getting Started with GRAFS"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with GRAFS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## What are GRAFS diagrams?
+
+GRAFS (General Representation of Agro-Food Systems) diagrams are flow diagrams
+that visualize nitrogen (or other nutrient) budgets in agricultural systems.
+They show the flows between compartments such as cropland, grassland, livestock,
+and human population, making it possible to understand the structure and
+efficiency of agro-food systems at regional scales.
+
+The methodology was developed by Billen et al. (2014), Lassaletta et al.
+(2015), and Le Noe et al. (2017).
+
+This package automates the creation of these diagrams by:
+
+1. Reading flow data from a CSV file
+2. Populating a draw.io XML template with proportional arrow widths
+3. Exporting the result as PNG images using the draw.io CLI
+
+## Installation
+
+### Prerequisites
+
+The GRAFS package requires the **draw.io desktop application** to be installed
+on your system. This is used to render the XML diagrams as PNG images.
+
+Download draw.io from:
+<https://github.com/jgraph/drawio-desktop/releases>
+
+Or install via package manager:
+
+- **Linux**: `sudo snap install drawio`
+- **macOS**: `brew install --cask drawio`, then
+  `chmod +x /Applications/draw.io.app/Contents/MacOS/draw.io`
+- **Windows**: Download and run the installer from the releases page
+
+### Installing the R package
+
+```{r install}
+# Install dependencies
+install.packages(c("xml2", "readr", "processx"))
+
+# Install GRAFS from a local tarball
+install.packages("path/to/GRAFS_0.2.0.tar.gz", repos = NULL, type = "source")
+```
+
+### Checking your setup
+
+After installation, verify everything is configured correctly:
+
+```{r check}
+library(GRAFS)
+check_setup()
+```
+
+This will report whether draw.io is found, all R dependencies are installed,
+and the bundled data files are accessible.
+
+## Basic usage
+
+### Locating input files
+
+The package ships with example data for Spanish provinces:
+
+```{r inputs}
+library(GRAFS)
+
+# Bundled input files
+csv <- system.file("extdata", "GRAFS_spain_data.csv", package = "GRAFS")
+xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
+
+# Find draw.io executable
+drawio <- find_drawio()
+```
+
+### Generating a diagram
+
+```{r basic}
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = "Albacete",
+  periods = list(list(years = 1930:1931))
+)
+```
+
+This creates:
+
+- `./my_output/xml/GRAFS_Albacete_P1_MEAN_1930-1931.xml` (the populated template)
+- `./my_output/png/GRAFS_Albacete_P1_MEAN_1930-1931.png` (the rendered diagram)
+
+The diagram shows the **mean** of all years in the period. Arrow widths are
+proportional to flow values.
+
+### Processing multiple regions
+
+Pass a vector of region names to generate diagrams for each:
+
+```{r multi-region}
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = c("Albacete", "Madrid", "Barcelona"),
+  periods = list(list(years = 2000:2005))
+)
+```
+
+### Processing multiple periods
+
+Pass multiple period specifications as a list:
+
+```{r multi-period}
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = "Albacete",
+  periods = list(
+    list(years = 1900:1910),
+    list(years = 1950:1960),
+    list(years = 2000:2010)
+  )
+)
+```
+
+## Comparing periods
+
+To visualize how flows changed between two time periods, add a `prev_years`
+element to a period specification:
+
+```{r comparison}
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = "Albacete",
+  periods = list(
+    list(years = 2011:2015, prev_years = 1990:1994)
+  )
+)
+```
+
+This generates a diagram where:
+
+- Arrow widths represent the **current period** (2011-2015) mean values
+- **Change bubbles** show the percentage change compared to the baseline
+  (1990-1994)
+- Blue bubbles (default) indicate increases
+- Green bubbles (default) indicate decreases
+
+You can customize the colors:
+
+```{r colors}
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = "Albacete",
+  periods = list(
+    list(years = 2011:2015, prev_years = 1990:1994)
+  ),
+  increase_color = "#FF6B6B",
+  decrease_color = "#4ECDC4"
+)
+```
+
+## Controlling arrow widths
+
+Arrow widths scale proportionally between 1 (minimum) and `max_width_arrows`
+(maximum). The `val_max_width` parameter sets the data value that corresponds
+to the maximum width:
+
+```{r widths}
+# For a region with small values (e.g., a single municipality)
+create_GRAFS(
+  csv_inputs = csv,
+  path_outputs = "./my_output",
+  xml_base = xml,
+  arrows_csv = ids,
+  drawio_exe = drawio,
+  regions = "Albacete",
+  periods = list(list(years = 1930:1931)),
+  max_width_arrows = 15,
+  val_max_width = 100,
+  decimals = 1
+)
+```
+
+- `max_width_arrows = 15`: thinner maximum arrows
+- `val_max_width = 100`: a flow value of 100 gets maximum width
+- `decimals = 1`: show one decimal place (useful for small values)
+
+## Preparing your own data
+
+### CSV format
+
+The input CSV must have these columns:
+
+| Column       | Type      | Description |
+|------------- |-----------|-------------|
+| `province`   | character | Region name (used to filter and label diagrams) |
+| `year`       | integer   | Year of the observation |
+| `label`      | character | Flow label matching the template (e.g., `{CROPS_TO_POP}`) |
+| `data`       | numeric   | Flow value (dot as decimal separator) |
+| `align`      | character | Text alignment: `"L"` or `"R"` |
+| `arrowColor` | character | Optional hex color (e.g., `#FF0000`), or `NA` |
+
+Example rows:
+
+```
+province,year,label,data,align,arrowColor
+Albacete,2010,{CROPS_TO_POP},245.5,L,NA
+Albacete,2010,{LIVESTOCK_TO_HUMAN},180.3,R,NA
+Albacete,2010,{PROVINCE_NAME},Albacete,L,NA
+```
+
+### Special labels
+
+Two labels have special handling:
+
+- `{PROVINCE_NAME}`: Replaced with the region name text (not an arrow)
+- `{YEAR}`: Replaced with a formatted year range like `mean_2011-2015`
+
+### Arrow ID mapping
+
+The `arrows_csv` file maps flow labels to internal draw.io element IDs. The
+bundled `GRAFS_arrows_ids.csv` maps 25 standard GRAFS flows. If you modify
+the draw.io template to add new arrows, you must add their IDs to this file.
+
+### Validating your inputs
+
+Before generating diagrams, check that your data, template, and arrow mappings
+are consistent:
+
+```{r validate}
+result <- validate_inputs(csv, ids, xml, regions = "Albacete")
+```
+
+This reports:
+
+- How many labels exist in each file
+- Which data labels have arrow mappings (will render as dynamic arrows)
+- Which data labels are text-only (present in template but no arrow)
+- Which labels are in data but not in the template (ignored)
+- Whether requested regions exist in the data
+
+## Troubleshooting
+
+### "draw.io executable not found"
+
+Run `check_setup()` for platform-specific installation instructions, or
+provide the path manually:
+
+```{r manual-path}
+create_GRAFS(
+  ...,
+  drawio_exe = "/path/to/your/drawio"
+)
+```
+
+### Many warnings about "Cell with label ... not found"
+
+This is normal when your CSV contains labels that don't have corresponding
+arrows in the template (e.g., intermediate calculations, area data). Use
+`validate_inputs()` to see which labels are mapped and which are not.
+
+### Arrow widths look wrong
+
+Adjust `val_max_width` to match your data range. If your largest flow is ~500,
+set `val_max_width = 500`. If all arrows look the same thickness, your
+`val_max_width` is probably too large relative to your data.
+
+## References
+
+- Billen, G., et al. (2014). *Regional Studies*.
+- Lassaletta, L., et al. (2015). *Global Biogeochemical Cycles*.
+- Le Noe, J., et al. (2017). *Science of the Total Environment*.
+- Rodriguez, A., et al. (2023). *Science of the Total Environment* 892: 164467.
