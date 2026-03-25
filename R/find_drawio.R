@@ -1,7 +1,8 @@
 #' Find draw.io Executable
 #'
 #' Searches common installation paths for the draw.io desktop application
-#' across Linux, macOS, and Windows.
+#' across Linux, macOS, and Windows. Falls back to searching the system
+#' \code{PATH}.
 #'
 #' @return Path to the draw.io executable as a character string, or
 #'   \code{NULL} if not found.
@@ -16,14 +17,36 @@
 #'
 #' @export
 find_drawio <- function() {
-  candidates <- c(
-    "/usr/bin/drawio",
-    "/usr/local/bin/drawio",
-    "/snap/bin/drawio",
-    "/Applications/draw.io.app/Contents/MacOS/draw.io",
-    "C:/Program Files/draw.io/draw.io.exe",
-    file.path(Sys.getenv("LOCALAPPDATA"), "Programs/draw.io/draw.io.exe")
-  )
+  sysname <- Sys.info()[["sysname"]]
+
+  if (sysname == "Linux") {
+    candidates <- c(
+      "/usr/bin/drawio",
+      "/usr/local/bin/drawio",
+      "/snap/bin/drawio",
+      file.path(Sys.getenv("HOME"), ".local", "bin", "drawio"),
+      "/opt/draw.io/drawio",
+      "/opt/drawio/drawio",
+      "/var/lib/flatpak/exports/bin/com.jgraph.drawio.desktop"
+    )
+  } else if (sysname == "Darwin") {
+    candidates <- c(
+      "/Applications/draw.io.app/Contents/MacOS/draw.io",
+      "/opt/homebrew/bin/drawio",
+      "/usr/local/bin/drawio",
+      file.path(Sys.getenv("HOME"), "Applications",
+                "draw.io.app", "Contents", "MacOS", "draw.io")
+    )
+  } else {
+    # Windows
+    candidates <- c(
+      file.path("C:", "Program Files", "draw.io", "draw.io.exe"),
+      file.path("C:", "Program Files (x86)", "draw.io", "draw.io.exe"),
+      file.path(Sys.getenv("LOCALAPPDATA"), "Programs",
+                "draw.io", "draw.io.exe"),
+      file.path(Sys.getenv("ProgramFiles"), "draw.io", "draw.io.exe")
+    )
+  }
 
   for (path in candidates) {
     if (nzchar(path) && file.exists(path)) {
@@ -31,9 +54,18 @@ find_drawio <- function() {
     }
   }
 
+  # Fallback: search PATH
   found <- Sys.which("drawio")
   if (nzchar(found)) {
     return(as.character(found))
+  }
+
+  # Windows: also try draw.io.exe in PATH
+  if (sysname == "Windows") {
+    found <- Sys.which("draw.io")
+    if (nzchar(found)) {
+      return(as.character(found))
+    }
   }
 
   NULL
@@ -72,7 +104,6 @@ check_setup <- function(drawio_path = NULL) {
     ok <- FALSE
     message("  MISSING: draw.io not found")
     message("  Install from: https://github.com/jgraph/drawio-desktop/releases")
-    os <- .Platform$OS.type
     sysname <- Sys.info()[["sysname"]]
     if (sysname == "Linux") {
       message("  On Linux: download the .deb/.rpm from the releases page,")
@@ -81,8 +112,9 @@ check_setup <- function(drawio_path = NULL) {
       message("  On macOS: download the .dmg from the releases page,")
       message("    or: brew install --cask drawio")
       message("  Then run: chmod +x /Applications/draw.io.app/Contents/MacOS/draw.io")
-    } else if (os == "windows") {
-      message("  On Windows: download the installer from the releases page")
+    } else if (sysname == "Windows") {
+      message("  On Windows: download the installer from the releases page,")
+      message("    or: winget install JGraph.Draw")
     }
   }
 

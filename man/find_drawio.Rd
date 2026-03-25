@@ -12,7 +12,8 @@ Path to the draw.io executable as a character string, or
 }
 \description{
 Searches common installation paths for the draw.io desktop application
-across Linux, macOS, and Windows.
+across Linux, macOS, and Windows. Falls back to searching the system
+\code{PATH}.
 }
 \examples{
 \dontrun{

@@ -116,15 +116,32 @@ replace_label_in_value <- function(doc, label, value) {
   doc
 }
 
-create_png <- function(drawio_exe, xml_path, png_path) {
-  p <- processx::process$new(
-    drawio_exe,
-    c("-x", paste0("-o", png_path), xml_path)
-  )
-  p$wait()
-  if (p$get_exit_status() != 0) {
-    warning("draw.io export failed for: ", xml_path)
+create_png <- function(drawio_exe, xml_path, png_path,
+                       timeout = 120) {
+  args <- c("-x", "-o", png_path, xml_path)
+
+  # macOS .app bundles may need --no-sandbox in some environments
+  if (Sys.info()[["sysname"]] == "Darwin") {
+    args <- c("--no-sandbox", args)
   }
+
+  p <- processx::process$new(drawio_exe, args)
+  p$wait(timeout * 1000)
+
+  if (p$is_alive()) {
+    p$kill()
+    warning("draw.io export timed out after ", timeout,
+            "s for: ", xml_path)
+    return(invisible(png_path))
+  }
+
+  if (p$get_exit_status() != 0) {
+    stderr_out <- p$read_all_error_lines()
+    warning("draw.io export failed for: ", xml_path,
+            if (length(stderr_out) > 0)
+              paste0("\n  ", paste(stderr_out, collapse = "\n  ")))
+  }
+
   message("Created: ", png_path)
   invisible(png_path)
 }
