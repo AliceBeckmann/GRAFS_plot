@@ -15,6 +15,7 @@ Description: Automates the creation of GRAFS (General Representation of
     draw.io desktop application (<https://github.com/jgraph/drawio-desktop>)
     to be installed separately.
 License: CC BY-NC 4.0
+Depends: R (>= 4.1.0)
 Encoding: UTF-8
 NeedsCompilation: no
 Imports:
