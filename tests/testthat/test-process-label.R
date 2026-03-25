@@ -54,6 +54,27 @@ test_that("process_label handles {YEAR} without calling change_style", {
   expect_equal(xml2::xml_attr(cell, "value"), "mean_2000-2005")
 })
 
+test_that("process_label formats single year without 'mean_' prefix", {
+  doc <- make_test_doc()
+  x <- data.frame(
+    label = "{YEAR}", data = "2015",
+    arrowColor = NA, stringsAsFactors = FALSE
+  )
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     stringsAsFactors = FALSE)
+
+  expect_silent(
+    doc <- GRAFS:::process_label(
+      doc, x, NULL, "{YEAR}", 2015, NULL,
+      0, FALSE, "#97cde5", "#a9d77f", t_id, 25, 1000
+    )
+  )
+
+  cell <- xml2::xml_find_first(doc, ".//mxCell[@id='year_cell']")
+  # Single year: mean_2015-2015
+  expect_equal(xml2::xml_attr(cell, "value"), "mean_2015-2015")
+})
+
 test_that("process_label computes mean for numeric labels", {
   doc <- make_test_doc()
   x <- data.frame(
@@ -72,6 +93,24 @@ test_that("process_label computes mean for numeric labels", {
 
   label_cell <- xml2::xml_find_first(doc, ".//mxCell[@id='label1']")
   expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 200")
+})
+
+test_that("process_label respects decimals parameter", {
+  doc <- make_test_doc()
+  x <- data.frame(
+    label = "{FLOW_A}", data = "123.456",
+    arrowColor = NA, stringsAsFactors = FALSE
+  )
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     stringsAsFactors = FALSE)
+
+  doc <- suppressWarnings(GRAFS:::process_label(
+    doc, x, NULL, "{FLOW_A}", 2000, NULL,
+    2, FALSE, "#97cde5", "#a9d77f", t_id, 25, 1000
+  ))
+
+  label_cell <- xml2::xml_find_first(doc, ".//mxCell[@id='label1']")
+  expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 123.46")
 })
 
 test_that("process_label computes percentage change", {
@@ -96,6 +135,30 @@ test_that("process_label computes percentage change", {
   style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
   # 200 is 100% increase over 100, so increase_color should be applied
   expect_equal(style[["fillColor"]], "#blue")
+})
+
+test_that("process_label applies decrease color for negative change", {
+  doc <- make_test_doc()
+  x <- data.frame(
+    label = "{FLOW_A}", data = "50", arrowColor = NA,
+    stringsAsFactors = FALSE
+  )
+  xch <- data.frame(
+    label = "{FLOW_A}", data = "100", arrowColor = NA,
+    stringsAsFactors = FALSE
+  )
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     stringsAsFactors = FALSE)
+
+  doc <- suppressWarnings(GRAFS:::process_label(
+    doc, x, xch, "{FLOW_A}", 2001, 2000,
+    0, TRUE, "#blue", "#green", t_id, 25, 1000
+  ))
+
+  arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  # 50 is 50% decrease from 100, so decrease_color
+  expect_equal(style[["fillColor"]], "#green")
 })
 
 test_that("process_label handles zero baseline without error", {
@@ -157,4 +220,22 @@ test_that("process_label uses extra decimal when mean rounds to zero", {
   # The label cells are removed too since they contain {FLOW_A}.
   cells <- xml2::xml_find_all(doc, ".//mxCell[contains(@value, '{FLOW_A}')]")
   expect_equal(length(cells), 0)
+})
+
+test_that("process_label handles large values correctly", {
+  doc <- make_test_doc()
+  x <- data.frame(
+    label = "{FLOW_A}", data = "99999",
+    arrowColor = NA, stringsAsFactors = FALSE
+  )
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     stringsAsFactors = FALSE)
+
+  doc <- suppressWarnings(GRAFS:::process_label(
+    doc, x, NULL, "{FLOW_A}", 2000, NULL,
+    0, FALSE, "#97cde5", "#a9d77f", t_id, 25, 1000
+  ))
+
+  label_cell <- xml2::xml_find_first(doc, ".//mxCell[@id='label1']")
+  expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 99999")
 })

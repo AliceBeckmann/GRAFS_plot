@@ -92,6 +92,14 @@ test_that("replace_label_in_value replaces in all matching cells", {
   expect_equal(xml2::xml_attr(arrow, "value"), "42")
 })
 
+test_that("replace_label_in_value preserves surrounding text", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::replace_label_in_value(doc, "{FLOW_A}", "42")
+  label_cell <- xml2::xml_find_first(doc, ".//mxCell[@id='label1']")
+  # "Value: {FLOW_A}" -> "Value: 42"
+  expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 42")
+})
+
 # --- change_bubble_size ---
 
 test_that("change_bubble_size modifies width, height, and fontSize", {
@@ -111,6 +119,16 @@ test_that("change_bubble_size warns for missing label", {
     GRAFS:::change_bubble_size(doc, "{NONEXISTENT}", 50, 14),
     "No mxCell found"
   )
+})
+
+test_that("change_bubble_size handles very small sizes", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_bubble_size(doc, "{FLOW_A}", 0.5, 6)
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[contains(@style, 'ellipse')]")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_equal(style[["width"]], "0.5")
+  expect_equal(style[["height"]], "0.5")
 })
 
 # --- change_style ---
@@ -210,4 +228,50 @@ test_that("change_style handles non-numeric strokeWidth value", {
   arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
   style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
   expect_equal(style[["strokeWidth"]], "1")
+})
+
+test_that("change_style handles exact max value correctly", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_A}", "strokeWidth", 1000,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+
+  arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  # 1000 * 25 / 1000 = 25
+  expect_equal(style[["strokeWidth"]], "25")
+})
+
+test_that("change_style handles negative value as non-numeric", {
+  doc <- make_test_doc()
+  # Negative values should still be numeric and get processed
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_A}", "strokeWidth", -10,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+
+  arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  # -10 is numeric, min(-10, 1000) = -10, -10 * 25 / 1000 = -0.25, max(1, -0.25) = 1
+  expect_equal(style[["strokeWidth"]], "1")
+})
+
+test_that("change_style can modify different arrows independently", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_A}", "strokeWidth", 400,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+  doc <- GRAFS:::change_style(
+    doc, "{FLOW_B}", "strokeWidth", 800,
+    make_t_id(), max_width_arrows = 25, val_max_width = 1000
+  )
+
+  arrow_a <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
+  arrow_b <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow2']")
+  style_a <- GRAFS:::parse_style(xml2::xml_attr(arrow_a, "style"))
+  style_b <- GRAFS:::parse_style(xml2::xml_attr(arrow_b, "style"))
+  expect_equal(style_a[["strokeWidth"]], "10")  # 400 * 25 / 1000 = 10
+  expect_equal(style_b[["strokeWidth"]], "20")  # 800 * 25 / 1000 = 20
 })
