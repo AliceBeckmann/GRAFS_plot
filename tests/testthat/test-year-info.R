@@ -18,3 +18,16 @@ test_that("year_info formats mixed contiguous and non-contiguous", {
   result <- GRAFS:::year_info(c(1990, 1991, 1995, 1996))
   expect_equal(result, "1990-1991_1995-1996")
 })
+
+test_that("year_info handles empty vector", {
+  expect_equal(GRAFS:::year_info(c()), "")
+})
+
+test_that("year_info handles long contiguous range", {
+  expect_equal(GRAFS:::year_info(1860:1870), "1860-1870")
+})
+
+test_that("year_info handles three non-contiguous years", {
+  result <- GRAFS:::year_info(c(2000, 2005, 2010))
+  expect_equal(result, "2000_2005_2010")
+})
