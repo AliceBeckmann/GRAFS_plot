@@ -124,7 +124,7 @@ validate_inputs <- function(csv_inputs, arrows_csv, xml_base, regions = NULL) {
   # Data quality
   numeric_labels <- setdiff(data_labels, c("{PROVINCE_NAME}", "{YEAR}"))
   numeric_data <- d[d$label %in% numeric_labels, ]
-  na_count <- sum(is.na(as.numeric(numeric_data$data)))
+  na_count <- sum(is.na(suppressWarnings(as.numeric(numeric_data$data))))
   if (na_count > 0) {
     message("\nWARNING - ", na_count, " non-numeric values found in data column")
   }

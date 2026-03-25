@@ -189,3 +189,96 @@ test_that("process_labels_loop warns on mismatched row counts", {
     "Expected 2 rows"
   )
 })
+
+test_that("process_labels_loop warns on mismatched change row counts", {
+  doc <- xml2::read_xml('
+    <mxGraphModel>
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="a1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+      </root>
+    </mxGraphModel>')
+
+  # Current period has 1 row, change period expects 2
+  dact <- data.frame(
+    label = "{FLOW_A}", data = "500", arrowColor = NA,
+    stringsAsFactors = FALSE
+  )
+  dactch <- data.frame(
+    label = "{FLOW_A}", data = "400", arrowColor = NA,
+    stringsAsFactors = FALSE
+  )
+  t_id <- data.frame(label = "{FLOW_A}", id = "a1", stringsAsFactors = FALSE)
+
+  expect_warning(
+    GRAFS:::process_labels_loop(
+      doc, dact, dactch, 2000, 1990:1991,
+      0, TRUE, "#97cde5", "#a9d77f", t_id, 25, 1000
+    ),
+    "Expected 2 rows for change label"
+  )
+})
+
+# --- create_png ---
+
+test_that("create_png warns on failed export", {
+  # Create a script that exits with non-zero status
+  fake_exe <- tempfile(fileext = if (.Platform$OS.type == "windows") ".bat" else "")
+  on.exit(unlink(fake_exe), add = TRUE)
+
+  if (.Platform$OS.type == "windows") {
+    writeLines("@echo off\nexit /b 1", fake_exe)
+  } else {
+    writeLines("#!/bin/sh\nexit 1", fake_exe)
+    Sys.chmod(fake_exe, "755")
+  }
+
+  tmp_xml <- tempfile(fileext = ".xml")
+  tmp_png <- tempfile(fileext = ".png")
+  on.exit(unlink(c(tmp_xml, tmp_png)), add = TRUE)
+  writeLines("<x/>", tmp_xml)
+
+  expect_warning(
+    GRAFS:::create_png(fake_exe, tmp_xml, tmp_png),
+    "draw.io export failed"
+  )
+})
+
+test_that("create_png returns png path invisibly", {
+  drawio <- find_drawio()
+  skip_if(is.null(drawio), "draw.io not installed")
+
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
+  xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+
+  tmp_png <- tempfile(fileext = ".png")
+  on.exit(unlink(tmp_png), add = TRUE)
+
+  result <- GRAFS:::create_png(drawio, xml, tmp_png)
+  expect_equal(result, tmp_png)
+})
+
+test_that("create_png handles timeout gracefully", {
+  # Create a script that sleeps longer than the timeout
+  fake_exe <- tempfile(fileext = if (.Platform$OS.type == "windows") ".bat" else "")
+  on.exit(unlink(fake_exe), add = TRUE)
+
+  if (.Platform$OS.type == "windows") {
+    writeLines("@echo off\nping -n 30 127.0.0.1 > nul", fake_exe)
+  } else {
+    writeLines("#!/bin/sh\nsleep 30", fake_exe)
+    Sys.chmod(fake_exe, "755")
+  }
+
+  tmp_xml <- tempfile(fileext = ".xml")
+  tmp_png <- tempfile(fileext = ".png")
+  on.exit(unlink(c(tmp_xml, tmp_png)), add = TRUE)
+  writeLines("<x/>", tmp_xml)
+
+  # Use a very short timeout (2 seconds)
+  expect_warning(
+    GRAFS:::create_png(fake_exe, tmp_xml, tmp_png, timeout = 2),
+    "timed out"
+  )
+})

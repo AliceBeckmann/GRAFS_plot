@@ -125,7 +125,7 @@ create_png <- function(drawio_exe, xml_path, png_path,
     args <- c("--no-sandbox", args)
   }
 
-  p <- processx::process$new(drawio_exe, args)
+  p <- processx::process$new(drawio_exe, args, stderr = "|")
   p$wait(timeout * 1000)
 
   if (p$is_alive()) {
