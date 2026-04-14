@@ -39,16 +39,18 @@ remove_change_bubbles <- function(doc) {
   doc
 }
 
-change_bubble_size <- function(doc, label, new_size, new_text_size) {
+change_bubble_size <- function(doc, label, new_size, new_text_size,
+                               fill_color = NULL) {
   cells <- xml2::xml_find_all(doc, ".//mxCell[@value]")
   found <- FALSE
   for (cell in cells) {
     cell_value <- xml2::xml_attr(cell, "value")
-    if (!is.na(cell_value) && cell_value == label) {
+    if (!is.na(cell_value) && grepl(label, cell_value, fixed = TRUE)) {
       style_list <- parse_style(xml2::xml_attr(cell, "style"))
       style_list["fontSize"] <- as.character(new_text_size)
       style_list["width"] <- as.character(new_size)
       style_list["height"] <- as.character(new_size)
+      if (!is.null(fill_color)) style_list["fillColor"] <- fill_color
       xml2::xml_set_attr(cell, "style", build_style(style_list))
       found <- TRUE
     }
@@ -178,6 +180,11 @@ prepare_data <- function(csv_path) {
   d[!grepl("WIDTH_MAX", d$label), ]
 }
 
+read_width_max <- function(csv_path) {
+  d <- readr::read_csv(csv_path, show_col_types = FALSE)
+  d[grepl("WIDTH_MAX", d$label), ]
+}
+
 prepare_directories <- function(path) {
   dir.create(file.path(path, "xml"), recursive = TRUE, showWarnings = FALSE)
   dir.create(file.path(path, "png"), recursive = TRUE, showWarnings = FALSE)
@@ -189,7 +196,8 @@ select_region_data <- function(d, region, years) {
 
 process_label <- function(doc, x, xch, label, years, years_change,
                           decimals, plot_change, increase_color, decrease_color,
-                          t_id_arrow, max_width_arrows, val_max_width) {
+                          t_id_arrow, max_width_arrows, val_max_width,
+                          min_bubble_size = 10) {
   arrowcolors <- unique(x$arrowColor[!is.na(x$arrowColor)])
   arrowcolor <- if (length(arrowcolors) > 0) arrowcolors[1] else NA
   value_change <- NA
@@ -227,13 +235,22 @@ process_label <- function(doc, x, xch, label, years, years_change,
       )
     }
 
+    bubble_label_raw <- t_id_arrow$labelchange[t_id_arrow$label == label]
+    has_bubble <- length(bubble_label_raw) > 0 && !is.na(bubble_label_raw[1])
+
     if (plot_change && !is.na(value_change)) {
-      doc <- change_style(
-        doc, label, "fillColor",
-        ifelse(value_change > 0, increase_color, decrease_color),
-        t_id_arrow, max_width_arrows, val_max_width
-      )
-      doc <- change_bubble_size(doc, label, abs(value_change), 12)
+      if (has_bubble) {
+        bubble_label <- paste0("{", bubble_label_raw[1], "}")
+        bubble_color <- ifelse(value_change > 0, increase_color, decrease_color)
+        bubble_size <- max(min_bubble_size, abs(value_change))
+        doc <- change_bubble_size(doc, bubble_label, bubble_size, 12,
+                                  fill_color = bubble_color)
+        doc <- replace_label_in_value(doc, bubble_label,
+                                      paste0(round(value_change), "%"))
+      }
+    } else if (plot_change && is.na(value_change) && has_bubble) {
+      bubble_label <- paste0("{", bubble_label_raw[1], "}")
+      doc <- suppressWarnings(remove_id(doc, bubble_label))
     }
   }
 
@@ -244,7 +261,8 @@ process_label <- function(doc, x, xch, label, years, years_change,
 process_labels_loop <- function(doc, dact, dactch, years, years_change,
                                 decimals, plot_change, increase_color,
                                 decrease_color, t_id_arrow,
-                                max_width_arrows, val_max_width) {
+                                max_width_arrows, val_max_width,
+                                min_bubble_size = 10) {
   for (lact in unique(dact$label)) {
     x <- dact[dact$label == lact, ]
     xch <- if (plot_change) dactch[dactch$label == lact, ] else NULL
@@ -265,7 +283,7 @@ process_labels_loop <- function(doc, dact, dactch, years, years_change,
     doc <- process_label(
       doc, x, xch, lact, years, years_change,
       decimals, plot_change, increase_color, decrease_color,
-      t_id_arrow, max_width_arrows, val_max_width
+      t_id_arrow, max_width_arrows, val_max_width, min_bubble_size
     )
   }
   doc
@@ -276,7 +294,8 @@ process_period_region <- function(period_idx, period, regions, d,
                                   decimals, val_max_width,
                                   increase_color, decrease_color,
                                   t_id_arrow, overwrite,
-                                  max_width_arrows) {
+                                  max_width_arrows, d_width_max,
+                                  min_bubble_size) {
   years <- period$years
   years_change <- period$prev_years
   plot_change <- !is.null(years_change)
@@ -293,6 +312,14 @@ process_period_region <- function(period_idx, period, regions, d,
 
     dactch <- select_region_data(d, region, years_change)
 
+    wm_rows <- d_width_max[d_width_max$province == region &
+                             d_width_max$year %in% years, ]
+    region_val_max_width <- if (nrow(wm_rows) > 0) {
+      round(mean(as.numeric(wm_rows$data)))
+    } else {
+      val_max_width
+    }
+
     filename <- sprintf(
       "GRAFS_%s_P%d_MEAN_%s", region, period_idx, year_info(years)
     )
@@ -308,12 +335,16 @@ process_period_region <- function(period_idx, period, regions, d,
       process_labels_loop(
         dact, dactch, years, years_change,
         decimals, plot_change, increase_color, decrease_color,
-        t_id_arrow, max_width_arrows, val_max_width
+        t_id_arrow, max_width_arrows, region_val_max_width, min_bubble_size
       )
 
     if (!plot_change) {
       doc <- remove_change_bubbles(doc)
     }
+
+    year_change_text <- if (plot_change) paste0("(", year_info(years_change), ")") else ""
+    doc <- replace_label_in_value(doc, "{YEARCHANGE}", year_change_text)
+    doc <- replace_label_in_value(doc, "{WIDTH_MAX}", as.character(region_val_max_width))
 
     writeLines(as.character(doc), xml_out, useBytes = TRUE)
     create_png(drawio_exe, xml_out, png_out)
@@ -415,8 +446,9 @@ create_GRAFS <- function(csv_inputs,
                          decimals = 0,
                          max_width_arrows = 25,
                          val_max_width = 1000,
-                         increase_color = "#97cde5",
-                         decrease_color = "#a9d77f",
+                         increase_color = "#a9d77f",
+                         decrease_color = "#97cde5",
+                         min_bubble_size = 10,
                          overwrite = TRUE) {
   if (!is.character(regions) || length(regions) == 0) {
     stop("'regions' must be a non-empty character vector")
@@ -449,6 +481,7 @@ create_GRAFS <- function(csv_inputs,
   t_id_arrow <- readr::read_csv(arrows_csv, show_col_types = FALSE)
   prepare_directories(path_outputs)
   d <- prepare_data(csv_inputs)
+  d_width_max <- read_width_max(csv_inputs)
 
   outputs <- character()
   for (i in seq_along(periods)) {
@@ -466,7 +499,9 @@ create_GRAFS <- function(csv_inputs,
       decrease_color = decrease_color,
       t_id_arrow = t_id_arrow,
       overwrite = overwrite,
-      max_width_arrows = max_width_arrows
+      max_width_arrows = max_width_arrows,
+      d_width_max = d_width_max,
+      min_bubble_size = min_bubble_size
     )
     outputs <- c(outputs, paths)
   }

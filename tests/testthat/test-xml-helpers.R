@@ -17,6 +17,7 @@ make_t_id <- function() {
   data.frame(
     label = c("{FLOW_A}", "{FLOW_B}"),
     id = c("arrow1", "arrow2"),
+    labelchange = c("FLOW_A", "FLOW_B"),
     stringsAsFactors = FALSE
   )
 }
@@ -129,6 +130,41 @@ test_that("change_bubble_size handles very small sizes", {
   style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
   expect_equal(style[["width"]], "0.5")
   expect_equal(style[["height"]], "0.5")
+})
+
+test_that("change_bubble_size matches HTML-wrapped bubble values", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="bubble1" value="&lt;span style=&quot;font-size:12px&quot;&gt;{FLOW_A}&lt;/span&gt;" style="ellipse;fontSize=8;width=20;height=20" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  doc <- GRAFS:::change_bubble_size(doc, "{FLOW_A}", 40, 10)
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[@id='bubble1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_equal(style[["width"]], "40")
+  expect_equal(style[["height"]], "40")
+})
+
+test_that("change_bubble_size sets fill_color when provided", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_bubble_size(doc, "{FLOW_A}", 30, 10, fill_color = "#ff0000")
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[contains(@style, 'ellipse')]")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_equal(style[["fillColor"]], "#ff0000")
+})
+
+test_that("change_bubble_size leaves fillColor unchanged when fill_color is NULL", {
+  doc <- make_test_doc()
+  doc <- GRAFS:::change_bubble_size(doc, "{FLOW_A}", 30, 10)
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[contains(@style, 'ellipse')]")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_false("fillColor" %in% names(style))
 })
 
 # --- change_style ---

@@ -113,52 +113,66 @@ test_that("process_label respects decimals parameter", {
   expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 123.46")
 })
 
-test_that("process_label computes percentage change", {
-  doc <- make_test_doc()
-  x <- data.frame(
-    label = "{FLOW_A}", data = "200", arrowColor = NA,
-    stringsAsFactors = FALSE
-  )
-  xch <- data.frame(
-    label = "{FLOW_A}", data = "100", arrowColor = NA,
-    stringsAsFactors = FALSE
-  )
+test_that("process_label colors bubble with increase_color on positive change", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="arrow1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+      <mxCell id="bubble1" value="{XFLOW_A}" style="ellipse;fontSize=8;width=20;height=20;fillColor=#dae8fc" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  x <- data.frame(label = "{FLOW_A}", data = "200", arrowColor = NA,
+                  stringsAsFactors = FALSE)
+  xch <- data.frame(label = "{FLOW_A}", data = "100", arrowColor = NA,
+                    stringsAsFactors = FALSE)
   t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
-                     stringsAsFactors = FALSE)
+                     labelchange = "XFLOW_A", stringsAsFactors = FALSE)
 
-  doc <- suppressWarnings(GRAFS:::process_label(
+  doc <- GRAFS:::process_label(
     doc, x, xch, "{FLOW_A}", 2001, 2000,
-    0, TRUE, "#blue", "#green", t_id, 25, 1000
-  ))
+    0, TRUE, "#green", "#blue", t_id, 25, 1000
+  )
 
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[@id='bubble1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_equal(style[["fillColor"]], "#green")
+  # Arrow fillColor must NOT be changed
   arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
-  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
-  # 200 is 100% increase over 100, so increase_color should be applied
-  expect_equal(style[["fillColor"]], "#blue")
+  arrow_style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  expect_equal(arrow_style[["fillColor"]], "#000000")
 })
 
-test_that("process_label applies decrease color for negative change", {
-  doc <- make_test_doc()
-  x <- data.frame(
-    label = "{FLOW_A}", data = "50", arrowColor = NA,
-    stringsAsFactors = FALSE
-  )
-  xch <- data.frame(
-    label = "{FLOW_A}", data = "100", arrowColor = NA,
-    stringsAsFactors = FALSE
-  )
+test_that("process_label colors bubble with decrease_color on negative change", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="arrow1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+      <mxCell id="bubble1" value="{XFLOW_A}" style="ellipse;fontSize=8;width=20;height=20;fillColor=#dae8fc" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  x <- data.frame(label = "{FLOW_A}", data = "50", arrowColor = NA,
+                  stringsAsFactors = FALSE)
+  xch <- data.frame(label = "{FLOW_A}", data = "100", arrowColor = NA,
+                    stringsAsFactors = FALSE)
   t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
-                     stringsAsFactors = FALSE)
+                     labelchange = "XFLOW_A", stringsAsFactors = FALSE)
 
-  doc <- suppressWarnings(GRAFS:::process_label(
+  doc <- GRAFS:::process_label(
     doc, x, xch, "{FLOW_A}", 2001, 2000,
-    0, TRUE, "#blue", "#green", t_id, 25, 1000
-  ))
+    0, TRUE, "#green", "#blue", t_id, 25, 1000
+  )
 
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[@id='bubble1']")
+  style <- GRAFS:::parse_style(xml2::xml_attr(bubble, "style"))
+  expect_equal(style[["fillColor"]], "#blue")
+  # Arrow fillColor must NOT be changed
   arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
-  style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
-  # 50 is 50% decrease from 100, so decrease_color
-  expect_equal(style[["fillColor"]], "#green")
+  arrow_style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
+  expect_equal(arrow_style[["fillColor"]], "#000000")
 })
 
 test_that("process_label handles zero baseline without error", {
@@ -200,6 +214,80 @@ test_that("process_label applies arrowColor when present", {
   arrow <- xml2::xml_find_first(doc, ".//mxCell[@id='arrow1']")
   style <- GRAFS:::parse_style(xml2::xml_attr(arrow, "style"))
   expect_equal(style[["fillColor"]], "#FF0000")
+})
+
+test_that("process_label replaces bubble label with percentage", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="arrow1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+      <mxCell id="bubble1" value="{XFLOW_A}" style="ellipse;fontSize=8;width=20;height=20" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  x <- data.frame(label = "{FLOW_A}", data = "150", arrowColor = NA,
+                  stringsAsFactors = FALSE)
+  xch <- data.frame(label = "{FLOW_A}", data = "100", arrowColor = NA,
+                    stringsAsFactors = FALSE)
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     labelchange = "XFLOW_A", stringsAsFactors = FALSE)
+
+  doc <- GRAFS:::process_label(
+    doc, x, xch, "{FLOW_A}", 2001, 2000,
+    0, TRUE, "#blue", "#green", t_id, 25, 1000
+  )
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[@id='bubble1']")
+  expect_equal(xml2::xml_attr(bubble, "value"), "50%")
+})
+
+test_that("process_label removes orphaned bubble when value_change is NA (zero baseline)", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="arrow1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+      <mxCell id="bubble1" value="{XFLOW_A}" style="ellipse;fontSize=8;width=20;height=20" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  x <- data.frame(label = "{FLOW_A}", data = "150", arrowColor = NA,
+                  stringsAsFactors = FALSE)
+  xch <- data.frame(label = "{FLOW_A}", data = "0", arrowColor = NA,
+                    stringsAsFactors = FALSE)
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     labelchange = "XFLOW_A", stringsAsFactors = FALSE)
+
+  doc <- GRAFS:::process_label(
+    doc, x, xch, "{FLOW_A}", 2001, 2000,
+    0, TRUE, "#blue", "#green", t_id, 25, 1000
+  )
+
+  bubble <- xml2::xml_find_first(doc, ".//mxCell[@id='bubble1']")
+  expect_true(inherits(bubble, "xml_missing"))
+})
+
+test_that("process_label skips bubble when labelchange is NA", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="arrow1" value="{FLOW_A}" style="strokeWidth=5;fillColor=#000000" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  x <- data.frame(label = "{FLOW_A}", data = "150", arrowColor = NA,
+                  stringsAsFactors = FALSE)
+  xch <- data.frame(label = "{FLOW_A}", data = "100", arrowColor = NA,
+                    stringsAsFactors = FALSE)
+  t_id <- data.frame(label = "{FLOW_A}", id = "arrow1",
+                     labelchange = NA_character_, stringsAsFactors = FALSE)
+
+  expect_no_warning(GRAFS:::process_label(
+    doc, x, xch, "{FLOW_A}", 2001, 2000,
+    0, TRUE, "#blue", "#green", t_id, 25, 1000
+  ))
 })
 
 test_that("process_label uses extra decimal when mean rounds to zero", {

@@ -287,7 +287,7 @@
         <mxCell id="rK_GwhreT1srsj36wAeV-20" value="{GRASS_TO_LIVESTOCK}" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
           <mxGeometry x="266" y="150" width="273" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="rK_GwhreT1srsj36wAeV-22" value="{IMPORT_ANIMALCR}&lt;br&gt;&lt;font style=&quot;font-size: 14px&quot;&gt;{IMPORT_ANIMALCR_RUM}*R&lt;br&gt;{IMPORT_ANIMALCR_MONOG}*M&lt;/font&gt;" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
+        <mxCell id="rK_GwhreT1srsj36wAeV-22" value="{IMPORT_ANIMALCR}" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
           <mxGeometry x="424.49" y="-82" width="261" height="70" as="geometry" />
         </mxCell>
         <mxCell id="rK_GwhreT1srsj36wAeV-21" value="&lt;div&gt;&lt;span style=&quot;font-weight: normal&quot;&gt;{WASTEWATER}&lt;/span&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=1;verticalAlign=middle;align=right;" parent="1" vertex="1">
@@ -343,7 +343,7 @@
         <mxCell id="rK_GwhreT1srsj36wAeV-39" value="{LIVESTOCK_TO_HUMAN}" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
           <mxGeometry x="650" y="160" width="70" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="rK_GwhreT1srsj36wAeV-42" value="{CROPS_TO_LIVESTOCK}&lt;br&gt;&lt;font style=&quot;font-size: 14px&quot;&gt;*{RCRTOLVSTCK_R}&lt;br&gt;*{MCRTOLVSTCK_M}&lt;/font&gt;" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
+        <mxCell id="rK_GwhreT1srsj36wAeV-42" value="{CROPS_TO_LIVESTOCK}&lt;br&gt;&lt;font style=&quot;font-size: 14px&quot;&gt;*{CRTOLVSTCK_R}&lt;br&gt;*{CRTOLVSTCK_M}&lt;/font&gt;" style="text;strokeColor=none;fillColor=none;html=1;fontSize=19;fontStyle=0;verticalAlign=middle;align=left;" parent="1" vertex="1">
           <mxGeometry x="386.69" y="220" width="260.13" height="70" as="geometry" />
         </mxCell>
         <mxCell id="rK_GwhreT1srsj36wAeV-47" value="&lt;div style=&quot;font-size: 18px&quot; align=&quot;right&quot;&gt;&lt;font style=&quot;font-size: 18px&quot;&gt;&lt;span style=&quot;font-weight: normal&quot;&gt;Crop losses and&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;&lt;div style=&quot;font-size: 18px&quot; align=&quot;right&quot;&gt;&lt;font style=&quot;font-size: 18px&quot;&gt;&lt;span style=&quot;font-weight: normal&quot;&gt;other uses&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;" style="text;strokeColor=none;fillColor=none;html=1;fontSize=16;fontStyle=1;verticalAlign=middle;align=center;" parent="1" vertex="1">
