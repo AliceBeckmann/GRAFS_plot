@@ -117,7 +117,7 @@ replace_label_in_value <- function(doc, label, value) {
   for (cell in cells) {
     cell_value <- xml2::xml_attr(cell, "value")
     if (!is.na(cell_value) && grepl(label, cell_value, fixed = TRUE)) {
-      new_value <- sub(label, value, cell_value, fixed = TRUE)
+      new_value <- gsub(label, value, cell_value, fixed = TRUE)
       xml2::xml_set_attr(cell, "value", new_value)
     }
   }
@@ -295,7 +295,7 @@ process_period_region <- function(period_idx, period, regions, d,
                                   increase_color, decrease_color,
                                   t_id_arrow, overwrite,
                                   max_width_arrows, d_width_max,
-                                  min_bubble_size) {
+                                  min_bubble_size, unit) {
   years <- period$years
   years_change <- period$prev_years
   plot_change <- !is.null(years_change)
@@ -345,6 +345,7 @@ process_period_region <- function(period_idx, period, regions, d,
     year_change_text <- if (plot_change) paste0("(", year_info(years_change), ")") else ""
     doc <- replace_label_in_value(doc, "{YEARCHANGE}", year_change_text)
     doc <- replace_label_in_value(doc, "{WIDTH_MAX}", as.character(region_val_max_width))
+    doc <- replace_label_in_value(doc, "{UNIT}", unit)
 
     writeLines(as.character(doc), xml_out, useBytes = TRUE)
     create_png(drawio_exe, xml_out, png_out)
@@ -395,6 +396,9 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   (default \code{"#97cde5"}).
 #' @param decrease_color Hex color for negative change bubbles
 #'   (default \code{"#a9d77f"}).
+#' @param unit Unit label displayed in the Reference box and next to total N
+#'   values (default \code{"MgN"}). Set to \code{"GgN"} for gigagram data, or
+#'   any string matching the units of your input CSV.
 #' @param overwrite Overwrite existing output files (default \code{TRUE}).
 #'
 #' @return Invisible character vector of output PNG file paths.
@@ -449,6 +453,7 @@ create_GRAFS <- function(csv_inputs,
                          increase_color = "#a9d77f",
                          decrease_color = "#97cde5",
                          min_bubble_size = 10,
+                         unit = "MgN",
                          overwrite = TRUE) {
   if (!is.character(regions) || length(regions) == 0) {
     stop("'regions' must be a non-empty character vector")
@@ -501,7 +506,8 @@ create_GRAFS <- function(csv_inputs,
       overwrite = overwrite,
       max_width_arrows = max_width_arrows,
       d_width_max = d_width_max,
-      min_bubble_size = min_bubble_size
+      min_bubble_size = min_bubble_size,
+      unit = unit
     )
     outputs <- c(outputs, paths)
   }

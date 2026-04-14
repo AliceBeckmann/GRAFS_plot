@@ -7,5 +7,6 @@ create_GRAFS(
   regions = "Albacete", # column name for regions
   periods = list(list(years = 2011:2015, prev_years = 2007:2010)), # time period(s) to visualize
   val_max_width = 60000,
-  max_width_arrows = 10
+  max_width_arrows = 10,
+  unit = "MgN"
 )

@@ -101,6 +101,24 @@ test_that("replace_label_in_value preserves surrounding text", {
   expect_equal(xml2::xml_attr(label_cell, "value"), "Value: 42")
 })
 
+test_that("replace_label_in_value substitutes {UNIT} placeholder", {
+  doc <- xml2::read_xml('
+  <mxGraphModel>
+    <root>
+      <mxCell id="0"/>
+      <mxCell id="1" parent="0"/>
+      <mxCell id="ref" value="1500 {UNIT}" style="text" parent="1"/>
+      <mxCell id="crop" value="{CRPLNDTOTN} {UNIT}" style="text" parent="1"/>
+    </root>
+  </mxGraphModel>')
+  doc <- GRAFS:::replace_label_in_value(doc, "{UNIT}", "MgN")
+
+  ref <- xml2::xml_find_first(doc, ".//mxCell[@id='ref']")
+  expect_equal(xml2::xml_attr(ref, "value"), "1500 MgN")
+  crop <- xml2::xml_find_first(doc, ".//mxCell[@id='crop']")
+  expect_equal(xml2::xml_attr(crop, "value"), "{CRPLNDTOTN} MgN")
+})
+
 # --- change_bubble_size ---
 
 test_that("change_bubble_size modifies width, height, and fontSize", {
