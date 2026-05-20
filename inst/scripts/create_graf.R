@@ -1,5 +1,5 @@
 create_GRAFS(
-  csv_inputs = "inst/extdata/GRAFS_spain_data_no_wmax.csv.gz", # your data file
+  csv_inputs = "inst/extdata/GRAFS_spain_data.csv.gz", # your data file
   path_outputs = "./output", # where to save results
   xml_base = "inst/templates/grafs_auto_v18.xml", # draw.io template
   arrows_csv = "inst/extdata/GRAFS_arrows_ids.csv", # flow → element ID mappings
