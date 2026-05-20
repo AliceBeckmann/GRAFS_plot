@@ -93,9 +93,11 @@ change_style <- function(doc, label, identifier, value,
     }
     if (value == 0) {
       doc <- remove_id(doc, label)
+      xml2::xml_remove(cell)
       return(doc)
     }
     style_list[identifier] <- as.character(round(max(1, value)))
+    style_list["endWidth"] <- "0"
   } else {
     style_list[identifier] <- as.character(value)
   }
