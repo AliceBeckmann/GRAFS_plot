@@ -45,23 +45,26 @@ run_basic_example <- function() {
   # Figures will be generated in the current path
   PATH_OUTPUTS <- "./GRAFS_test-outputs/"
 
+  val_max_width <- 1000 #choose max value to change arrow sizes
   system.file(
     "extdata",
     "GRAFS_spain_data.csv",
-    # "GRAFS_alfredo.csv",
     package = "GRAFS"
   ) |>
     readr::read_csv() |>
-    dplyr::filter(!label %in% c("{YEAR}", "{PROVINCE_NAME}", "{WIDTH_MAX}")) |>
+    dplyr::mutate(
+      label = ifelse(label == "{WIDTH_MAX}", val_max_width, label)
+    ) |>
+    dplyr::filter(!label %in% c("{YEAR}", "{PROVINCE_NAME}")) |>
     create_GRAFS(
       PATH_OUTPUTS,
       XML_BASE,
       arrow_ids,
       DRAW_IO_EXE,
       max_width_arrows = 20,
-      val_max_width = 50,
-      regions = c("Zaragoza"),
-      years = 2011:2015,
-      years_change = 1990:1994
+      val_max_width = val_max_width,
+      regions = c("Spain"),
+      years = 1960:1970,
+      years_change = 1920:1930
     )
 }

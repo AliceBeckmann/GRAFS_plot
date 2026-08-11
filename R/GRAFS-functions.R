@@ -15,7 +15,10 @@ maybe_remove_change_bubbles <- function(doc, years_change) {
     return(doc)
   }
 
-  bubbles <- xml2::xml_find_all(doc, ".//mxCell[contains(@style, 'ellipse')]")
+  bubbles <- xml2::xml_find_all(
+    doc,
+    ".//mxCell[contains(@style, 'ellipse') and @value != '']"
+  )
   if (length(bubbles) == 0) {
     warning("No ellipse bubbles found")
   }
@@ -23,7 +26,14 @@ maybe_remove_change_bubbles <- function(doc, years_change) {
   doc
 }
 
-change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
+change_bubble_size <- function(
+  doc,
+  label,
+  avg_change,
+  NEW_TEXT_SIZE,
+  INCREASE_COLOR,
+  DECREASE_COLOR
+) {
   # TODO: fix for labels without bubble
   if (is.na(label)) {
     return(doc)
@@ -39,17 +49,26 @@ change_bubble_size <- function(doc, label, NEW_SIZE, NEW_TEXT_SIZE) {
     return(doc)
   }
 
-  xml2::xml_set_attr(
-    cell,
-    "style",
-    stringr::str_replace(
-      xml2::xml_attr(cell, "style"),
-      "fontSize=\\d+",
-      stringr::str_glue("fontSize={NEW_TEXT_SIZE}")
-    )
-  )
+  bubble_color <- if (!is.na(avg_change) && avg_change < 0) {
+    DECREASE_COLOR
+  } else {
+    INCREASE_COLOR
+  }
 
-  NEW_SIZE <- min(sqrt(NEW_SIZE) * 20, 60)
+  style <- xml2::xml_attr(cell, "style")
+  style <- stringr::str_replace(
+    style,
+    "fontSize=\\d+",
+    stringr::str_glue("fontSize={NEW_TEXT_SIZE}")
+  )
+  style <- stringr::str_replace(
+    style,
+    "fillColor=#[0-9a-fA-F]{6}",
+    stringr::str_glue("fillColor={bubble_color}")
+  )
+  xml2::xml_set_attr(cell, "style", style)
+
+  NEW_SIZE <- min(sqrt(abs(avg_change)) * 30, 45)
 
   mx_geometry <- xml2::xml_find_first(cell, ".//mxGeometry")
   xml2::xml_set_attr(mx_geometry, "width", NEW_SIZE)
@@ -232,7 +251,9 @@ apply_styles_to_label <- function(
   row,
   max_width_arrows,
   val_max_width,
-  min_width_arrows
+  min_width_arrows,
+  increase_color,
+  decrease_color
 ) {
   template |>
     change_style(
@@ -252,7 +273,13 @@ apply_styles_to_label <- function(
         as.character(round(row$avg_current))
       }
     ) |>
-    change_bubble_size(row$labelchange, abs(row$avg_change), 12) |>
+    change_bubble_size(
+      row$labelchange,
+      row$avg_change,
+      12,
+      increase_color,
+      decrease_color
+    ) |>
     replace_label_in_value(
       row$labelchange,
       stringr::str_glue("{round(row$avg_change)} %")
@@ -279,6 +306,8 @@ create_regional_grafs <- function(
   max_width_arrows,
   val_max_width,
   min_width_arrows,
+  increase_color,
+  decrease_color,
   output_path,
   draw_io_exe
 ) {
@@ -301,7 +330,9 @@ create_regional_grafs <- function(
           row,
           max_width_arrows,
           val_max_width,
-          min_width_arrows
+          min_width_arrows,
+          increase_color,
+          decrease_color
         )
       }
     ) |>
@@ -377,6 +408,8 @@ create_GRAFS <- function(
         max_width_arrows,
         val_max_width,
         min_width_arrows,
+        INCREASE_COLOR,
+        DECREASE_COLOR,
         output_path,
         draw_io_exe
       )
