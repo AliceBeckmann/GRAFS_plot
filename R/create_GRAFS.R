@@ -178,9 +178,41 @@ year_info <- function(years) {
   label
 }
 
+#' Add derived {CRPLNDTOTN} rows where missing
+#'
+#' {CRPLNDTOTN} (total cropland N) is not always a raw value in the input
+#' data -- some datasets provide it precomputed, others expect it derived as
+#' the sum of the five underlying crop-type components. Adds a
+#' {CRPLNDTOTN} row for each province/year that has all five components but
+#' no {CRPLNDTOTN} row of its own; leaves data that already has it untouched.
+#'
+#' @keywords internal
+add_crplndtotn <- function(d) {
+  components <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
+  comp_rows <- d[d$label %in% components, ]
+  if (nrow(comp_rows) == 0) {
+    return(d)
+  }
+
+  comp_rows$data <- as.numeric(comp_rows$data)
+  totals <- aggregate(data ~ province + year, comp_rows, sum)
+  totals$label <- "{CRPLNDTOTN}"
+  totals$align <- "L"
+  totals$arrowColor <- NA
+
+  has_total <- paste(d$province, d$year)[d$label == "{CRPLNDTOTN}"]
+  totals <- totals[!paste(totals$province, totals$year) %in% has_total, ]
+  if (nrow(totals) == 0) {
+    return(d)
+  }
+
+  rbind(d, totals[, names(d)])
+}
+
 prepare_data <- function(csv_path) {
   d <- readr::read_csv(csv_path, show_col_types = FALSE)
   d <- unique(d)
+  d <- add_crplndtotn(d)
   d[!grepl("WIDTH_MAX", d$label), ]
 }
 
@@ -211,7 +243,7 @@ process_label <- function(doc, x, xch, label, years, years_change,
   if (label == "{PROVINCE_NAME}") {
     mean_val <- x$data[1]
   } else if (label == "{YEAR}") {
-    mean_val <- paste0("mean_", min(years), "-", max(years))
+    mean_val <- year_info(years)
   } else {
     x$data <- as.numeric(x$data)
     mean_val <- round(mean(x$data), decimals)

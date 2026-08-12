@@ -43,6 +43,7 @@ validate_inputs <- function(csv_inputs, arrows_csv, xml_base, regions = NULL) {
 
   # Read inputs
   d <- readr::read_csv(csv_inputs, show_col_types = FALSE)
+  d <- add_crplndtotn(d)
   arrows <- readr::read_csv(arrows_csv, show_col_types = FALSE)
   doc <- xml2::read_xml(xml_base)
 

@@ -51,7 +51,7 @@ test_that("process_label handles {YEAR} without calling change_style", {
   )
 
   cell <- xml2::xml_find_first(doc, ".//mxCell[@id='year_cell']")
-  expect_equal(xml2::xml_attr(cell, "value"), "mean_2000-2005")
+  expect_equal(xml2::xml_attr(cell, "value"), "2000-2005")
 })
 
 test_that("process_label formats single year without 'mean_' prefix", {
@@ -71,8 +71,7 @@ test_that("process_label formats single year without 'mean_' prefix", {
   )
 
   cell <- xml2::xml_find_first(doc, ".//mxCell[@id='year_cell']")
-  # Single year: mean_2015-2015
-  expect_equal(xml2::xml_attr(cell, "value"), "mean_2015-2015")
+  expect_equal(xml2::xml_attr(cell, "value"), "2015")
 })
 
 test_that("process_label computes mean for numeric labels", {
