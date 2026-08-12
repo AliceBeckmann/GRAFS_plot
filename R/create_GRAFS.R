@@ -31,7 +31,9 @@ remove_id <- function(doc, id) {
 }
 
 remove_change_bubbles <- function(doc) {
-  bubbles <- xml2::xml_find_all(doc, ".//mxCell[contains(@style, 'ellipse')]")
+  bubbles <- xml2::xml_find_all(
+    doc, ".//mxCell[contains(@style, 'ellipse') and @value != '']"
+  )
   if (length(bubbles) == 0) {
     warning("No ellipse bubbles found in template")
   }
@@ -244,7 +246,7 @@ process_label <- function(doc, x, xch, label, years, years_change,
       if (has_bubble) {
         bubble_label <- paste0("{", bubble_label_raw[1], "}")
         bubble_color <- ifelse(value_change > 0, increase_color, decrease_color)
-        bubble_size <- max(min_bubble_size, abs(value_change))
+        bubble_size <- min(max(min_bubble_size, sqrt(abs(value_change)) * 30), 45)
         doc <- change_bubble_size(doc, bubble_label, bubble_size, 12,
                                   fill_color = bubble_color)
         doc <- replace_label_in_value(doc, bubble_label,
@@ -452,8 +454,8 @@ create_GRAFS <- function(csv_inputs,
                          decimals = 0,
                          max_width_arrows = 25,
                          val_max_width = 1000,
-                         increase_color = "#a9d77f",
-                         decrease_color = "#97cde5",
+                         increase_color = "#97cde5",
+                         decrease_color = "#a9d77f",
                          min_bubble_size = 10,
                          unit = "MgN",
                          overwrite = TRUE) {
