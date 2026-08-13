@@ -8,7 +8,7 @@ create_GRAFS(
   drawio_exe = find_drawio(), # auto-detects draw.io
   regions = "spain", # column name for regions
   # years to show. Add prev_years to compare with an earlier period (shows change in %).
-  # To turn this off, either delete the whole "prev_years = ..." part, or set prev_years = 0.
+  # To turn this off, delete the whole "prev_years = ..." part.
   periods = list(list(years = 2011:2015, prev_years = 2000:2004)),
   val_max_width = 1500,
   max_width_arrows = 20,

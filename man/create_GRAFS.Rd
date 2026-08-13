@@ -68,6 +68,11 @@ computing percentage changes. Example:
 \item{decrease_color}{Hex color for negative change bubbles
 (default \code{"#a9d77f"}).}
 
+\item{min_bubble_size}{Minimum diameter of a change bubble, in diagram
+units (default 10). Change bubbles scale with the square root of the
+percentage change, floored at this size so small changes stay legible
+and capped at 45 so large ones do not overflow the diagram.}
+
 \item{unit}{Unit label displayed in the Reference box and next to total N
 values (default \code{"MgN"}). Set to \code{"GgN"} for gigagram data, or
 any string matching the units of your input CSV.}

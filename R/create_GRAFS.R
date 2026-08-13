@@ -178,35 +178,51 @@ year_info <- function(years) {
   label
 }
 
-#' Add derived {CRPLNDTOTN} rows where missing
+#' Add derived total-cropland-N rows where missing
 #'
-#' {CRPLNDTOTN} (total cropland N) is not always a raw value in the input
-#' data -- some datasets provide it precomputed, others expect it derived as
-#' the sum of the five underlying crop-type components. Adds a
-#' {CRPLNDTOTN} row for each province/year that has all five components but
-#' no {CRPLNDTOTN} row of its own; leaves data that already has it untouched.
+#' \code{\{CRPLNDTOTN\}} (total cropland N) is not always a raw value in the
+#' input data -- some datasets provide it precomputed, others expect it
+#' derived as the sum of the five underlying crop-type components. Adds a
+#' \code{\{CRPLNDTOTN\}} row for each province/year that has all five
+#' components as numeric values but no \code{\{CRPLNDTOTN\}} row of its own;
+#' leaves data that already has it untouched. A province/year missing a
+#' component, or with a non-numeric one, gets no row at all rather than a
+#' partial total.
 #'
 #' @keywords internal
 add_crplndtotn <- function(d) {
   components <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
   comp_rows <- d[d$label %in% components, ]
+  comp_rows$data <- suppressWarnings(as.numeric(comp_rows$data))
+  comp_rows <- comp_rows[!is.na(comp_rows$data), ]
   if (nrow(comp_rows) == 0) {
     return(d)
   }
 
-  comp_rows$data <- as.numeric(comp_rows$data)
-  totals <- aggregate(data ~ province + year, comp_rows, sum)
-  totals$label <- "{CRPLNDTOTN}"
-  totals$align <- "L"
-  totals$arrowColor <- NA
-
   has_total <- paste(d$province, d$year)[d$label == "{CRPLNDTOTN}"]
-  totals <- totals[!paste(totals$province, totals$year) %in% has_total, ]
-  if (nrow(totals) == 0) {
+  groups <- split(comp_rows, paste(comp_rows$province, comp_rows$year))
+  groups <- groups[!names(groups) %in% has_total]
+  totals <- lapply(groups, crplndtotn_row, components = components)
+  totals <- totals[!vapply(totals, is.null, logical(1))]
+  if (length(totals) == 0) {
     return(d)
   }
 
-  rbind(d, totals[, names(d)])
+  rbind(d, do.call(rbind, totals))
+}
+
+crplndtotn_row <- function(rows, components) {
+  rows <- rows[!duplicated(rows$label), ]
+  if (!all(components %in% rows$label)) {
+    return(NULL)
+  }
+
+  # Built from a component row so every column of the input data -- including
+  # any the package does not know about -- is carried over unchanged.
+  row <- rows[1, ]
+  row$label <- "{CRPLNDTOTN}"
+  row$data <- sum(rows$data)
+  row
 }
 
 prepare_data <- function(csv_path) {
@@ -434,6 +450,10 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   (default \code{"#97cde5"}).
 #' @param decrease_color Hex color for negative change bubbles
 #'   (default \code{"#a9d77f"}).
+#' @param min_bubble_size Minimum diameter of a change bubble, in diagram
+#'   units (default 10). Change bubbles scale with the square root of the
+#'   percentage change, floored at this size so small changes stay legible
+#'   and capped at 45 so large ones do not overflow the diagram.
 #' @param unit Unit label displayed in the Reference box and next to total N
 #'   values (default \code{"MgN"}). Set to \code{"GgN"} for gigagram data, or
 #'   any string matching the units of your input CSV.

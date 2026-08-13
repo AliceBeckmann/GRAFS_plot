@@ -141,6 +141,44 @@ test_that("create_GRAFS produces XML output when drawio is available", {
   expect_match(xml_files[1], "GRAFS_spain_P1_MEAN_1990-1991\\.xml")
 })
 
+# The bundled example data has a single region, so the multi-region path gets
+# a synthetic two-region copy of it.
+two_region_csv <- function() {
+  csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
+  d <- readr::read_csv(csv, show_col_types = FALSE)
+  north <- d
+  north$province <- "north"
+  south <- d
+  south$province <- "south"
+
+  path <- tempfile(fileext = ".csv.gz")
+  readr::write_csv(rbind(north, south), path)
+  path
+}
+
+test_that("create_GRAFS handles multiple regions", {
+  drawio <- find_drawio()
+  skip_if(is.null(drawio), "draw.io not installed")
+
+  csv <- two_region_csv()
+  xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+  ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
+  out <- file.path(tempdir(), paste0("grafs_multi_", Sys.getpid()))
+  on.exit(unlink(c(out, csv), recursive = TRUE), add = TRUE)
+
+  suppressWarnings(create_GRAFS(
+    csv_inputs = csv, path_outputs = out, xml_base = xml,
+    arrows_csv = ids, drawio_exe = drawio,
+    regions = c("north", "south"),
+    periods = list(list(years = 1990:1991))
+  ))
+
+  xml_files <- list.files(file.path(out, "xml"), pattern = "\\.xml$")
+  expect_length(xml_files, 2)
+  expect_match(xml_files[1], "GRAFS_north_P1_MEAN_1990-1991\\.xml")
+  expect_match(xml_files[2], "GRAFS_south_P1_MEAN_1990-1991\\.xml")
+})
+
 test_that("create_GRAFS respects overwrite=FALSE", {
   drawio <- find_drawio()
   skip_if(is.null(drawio), "draw.io not installed")

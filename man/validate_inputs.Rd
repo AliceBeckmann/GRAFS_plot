@@ -18,21 +18,22 @@ checks that each region has data in the CSV.}
 }
 \value{
 Invisible list with elements:
-\describe{
-  \item{data_labels}{All unique labels in the CSV data}
-  \item{arrow_labels}{All labels in the arrow ID mapping}
-  \item{template_labels}{All label placeholders found in the template}
-  \item{unmapped_data}{Data labels with no arrow mapping}
-  \item{unmapped_arrows}{Arrow labels with no data}
-  \item{missing_in_template}{Arrow labels not found in the template}
-  \item{ok}{TRUE if no critical issues found}
-}
+  \describe{
+    \item{data_labels}{All unique labels in the CSV data}
+    \item{arrow_labels}{All labels in the arrow ID mapping}
+    \item{template_labels}{All label placeholders found in the template}
+    \item{unmapped_data}{Data labels with no arrow mapping}
+    \item{unmapped_arrows}{Arrow labels with no data}
+    \item{missing_in_template}{Arrow labels not found in the template}
+    \item{ok}{TRUE if no critical issues found}
+  }
 }
 \description{
 Checks consistency between the input CSV data, the arrow ID mapping,
 and the draw.io XML template. Reports which data labels have arrow
 mappings, which template placeholders have data, and any mismatches.
-
+}
+\details{
 This function does not require draw.io and can be used to debug input
 files before generating diagrams.
 }
@@ -44,4 +45,5 @@ ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
 result <- validate_inputs(csv, ids, xml, regions = "spain")
 }
+
 }

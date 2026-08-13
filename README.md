@@ -84,7 +84,8 @@ create_GRAFS(
 
 Change bubbles are colored by direction: blue for increases, green for decreases (configurable via `increase_color` and `decrease_color`).
 
-To turn off the change bubbles, either delete the whole `prev_years = ...` part, or set `prev_years = 0`.
+To turn off the change bubbles, delete the whole `prev_years = ...` part (a
+period with no `prev_years` gets a plain diagram).
 
 ## Input data format
 

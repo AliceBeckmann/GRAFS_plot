@@ -122,6 +122,94 @@ test_that("prepare_data reads gzipped CSV", {
   expect_equal(result$label[1], "{FLOW_A}")
 })
 
+# --- add_crplndtotn ---
+
+crplndtotn_csv <- function(rows) {
+  path <- tempfile(fileext = ".csv")
+  writeLines(c("province,year,label,data,align,arrowColor", rows), path)
+  path
+}
+
+component_rows <- function(province = "A", year = 2000, values = 1:5) {
+  labels <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
+  sprintf("%s,%d,%s,%s,R,NA", province, year, labels, values)
+}
+
+test_that("add_crplndtotn sums the five components when absent", {
+  tmp_csv <- crplndtotn_csv(component_rows(values = c(10, 20, 30, 40, 50)))
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  result <- GRAFS:::prepare_data(tmp_csv)
+  total <- result[result$label == "{CRPLNDTOTN}", ]
+  expect_equal(nrow(total), 1)
+  expect_equal(as.numeric(total$data), 150)
+  # Carried over from the components, as the original implementation did.
+  expect_equal(total$align, "R")
+})
+
+test_that("add_crplndtotn leaves a precomputed total untouched", {
+  tmp_csv <- crplndtotn_csv(c(
+    component_rows(),
+    "A,2000,{CRPLNDTOTN},999,L,NA"
+  ))
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  result <- GRAFS:::prepare_data(tmp_csv)
+  total <- result[result$label == "{CRPLNDTOTN}", ]
+  expect_equal(nrow(total), 1)
+  expect_equal(as.numeric(total$data), 999)
+})
+
+test_that("add_crplndtotn derives per province and year independently", {
+  tmp_csv <- crplndtotn_csv(c(
+    component_rows("A", 2000, values = rep(1, 5)),
+    component_rows("A", 2001, values = rep(2, 5)),
+    component_rows("B", 2000, values = rep(3, 5)),
+    # B/2001 already has its total, so it must not be recomputed.
+    component_rows("B", 2001, values = rep(4, 5)),
+    "B,2001,{CRPLNDTOTN},7,L,NA"
+  ))
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  result <- GRAFS:::prepare_data(tmp_csv)
+  total <- result[result$label == "{CRPLNDTOTN}", ]
+  expect_equal(nrow(total), 4)
+  expect_equal(
+    as.numeric(total$data[order(total$province, total$year)]),
+    c(5, 10, 15, 7)
+  )
+})
+
+test_that("add_crplndtotn skips incomplete or non-numeric components", {
+  tmp_csv <- crplndtotn_csv(c(
+    # One component short.
+    component_rows("A", 2000)[1:4],
+    # Complete, but one value is not a number.
+    component_rows("B", 2000, values = c(1, 2, 3, 4, "n/a"))
+  ))
+  on.exit(unlink(tmp_csv), add = TRUE)
+
+  result <- GRAFS:::prepare_data(tmp_csv)
+  expect_equal(sum(result$label == "{CRPLNDTOTN}"), 0)
+})
+
+test_that("add_crplndtotn preserves columns it does not know about", {
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(
+    c(
+      "province,year,label,data,align,arrowColor,source",
+      sub("R,NA$", "R,NA,census", component_rows())
+    ),
+    path
+  )
+
+  result <- GRAFS:::prepare_data(path)
+  total <- result[result$label == "{CRPLNDTOTN}", ]
+  expect_equal(nrow(total), 1)
+  expect_equal(total$source, "census")
+})
+
 # --- process_labels_loop ---
 
 test_that("process_labels_loop processes multiple labels", {
