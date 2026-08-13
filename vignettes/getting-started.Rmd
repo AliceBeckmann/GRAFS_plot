@@ -75,7 +75,8 @@ and the bundled data files are accessible.
 
 ### Locating input files
 
-The package ships with example data for Spanish provinces:
+The package ships with example national-level data for Spain, 1990-2015
+(from Rodriguez et al. 2023 -- see References):
 
 ```{r inputs}
 library(GRAFS)
@@ -98,31 +99,33 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
-  periods = list(list(years = 1930:1931))
+  regions = "spain",
+  periods = list(list(years = 1990:1991))
 )
 ```
 
 This creates:
 
-- `./my_output/xml/GRAFS_Albacete_P1_MEAN_1930-1931.xml` (the populated template)
-- `./my_output/png/GRAFS_Albacete_P1_MEAN_1930-1931.png` (the rendered diagram)
+- `./my_output/xml/GRAFS_spain_P1_MEAN_1990-1991.xml` (the populated template)
+- `./my_output/png/GRAFS_spain_P1_MEAN_1990-1991.png` (the rendered diagram)
 
 The diagram shows the **mean** of all years in the period. Arrow widths are
 proportional to flow values.
 
 ### Processing multiple regions
 
-Pass a vector of region names to generate diagrams for each:
+Pass a vector of region names to generate diagrams for each. The bundled
+example data only has one region (`"spain"`), but if your own CSV has
+multiple regions in its `province` column, you can process them all at once:
 
 ```{r multi-region}
 create_GRAFS(
-  csv_inputs = csv,
+  csv_inputs = "path/to/your_data.csv",
   path_outputs = "./my_output",
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = c("Albacete", "Madrid", "Barcelona"),
+  regions = c("region_1", "region_2", "region_3"),
   periods = list(list(years = 2000:2005))
 )
 ```
@@ -138,11 +141,11 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(
-    list(years = 1900:1910),
-    list(years = 1950:1960),
-    list(years = 2000:2010)
+    list(years = 1990:1995),
+    list(years = 2000:2005),
+    list(years = 2010:2015)
   )
 )
 ```
@@ -159,7 +162,7 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(
     list(years = 2011:2015, prev_years = 1990:1994)
   )
@@ -183,7 +186,7 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(
     list(years = 2011:2015, prev_years = 1990:1994)
   ),
@@ -206,8 +209,8 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
-  periods = list(list(years = 1930:1931)),
+  regions = "spain",
+  periods = list(list(years = 1990:1991)),
   max_width_arrows = 15,
   val_max_width = 100,
   decimals = 1
@@ -247,13 +250,17 @@ Albacete,2010,{PROVINCE_NAME},Albacete,L,NA
 Two labels have special handling:
 
 - `{PROVINCE_NAME}`: Replaced with the region name text (not an arrow)
-- `{YEAR}`: Replaced with a formatted year range like `mean_2011-2015`
+- `{YEAR}`: Replaced with a formatted year range like `2011-2015`
 
 ### Arrow ID mapping
 
 The `arrows_csv` file maps flow labels to internal draw.io element IDs. The
-bundled `GRAFS_arrows_ids.csv` maps 25 standard GRAFS flows. If you modify
-the draw.io template to add new arrows, you must add their IDs to this file.
+bundled `GRAFS_arrows_ids.csv` maps 25 standard GRAFS flows.
+
+You can revise the draw.io template itself -- for example, removing arrows
+for flows you don't want to show, or don't have data for. If you modify the
+template to add new arrows, add their IDs to `arrows_csv`; if you remove
+arrows, remove the corresponding rows from `arrows_csv` too.
 
 ### Validating your inputs
 
@@ -261,7 +268,7 @@ Before generating diagrams, check that your data, template, and arrow mappings
 are consistent:
 
 ```{r validate}
-result <- validate_inputs(csv, ids, xml, regions = "Albacete")
+result <- validate_inputs(csv, ids, xml, regions = "spain")
 ```
 
 This reports:
@@ -271,6 +278,79 @@ This reports:
 - Which data labels are text-only (present in template but no arrow)
 - Which labels are in data but not in the template (ignored)
 - Whether requested regions exist in the data
+
+## Label reference
+
+The labels used in the bundled dataset and template are nitrogen (N) budget
+variables from the GRAFS methodology. This reference explains what each one
+represents; it's provided by the package's original authors and may not
+cover every label if you extend the template with your own.
+
+### Facts (informational values, not flows)
+
+| Label | Meaning |
+|-------|---------|
+| `{PROVINCE_NAME}` | Name of the study area |
+| `{YEAR}` | The year or year range shown in the diagram |
+| `{YEARCHANGE}` | The comparison year range shown in the diagram (when a comparison period is requested) |
+| `{KM2_PROVINCE}` | Area of the study region in km² (named "province" even when the study area isn't a province) |
+| `{WIDTH_MAX}` | The data value that maps to the maximum arrow width in the diagram |
+| `{POPULATION}` | Population, in inhabitants |
+| `{POPULATIONM}` | Population, in millions of inhabitants |
+| `{GRASSMha}` | Approximate grassland area, in Mha |
+| `{GREHha}` / `{GREHMha}` / `{GREHN}` | Greenhouse crops area (ha / Mha) and N quantity (GgN) |
+| `{PERiha}` / `{PERiMha}` / `{PERiN}` | Permanent irrigated crops area (ha / Mha) and N production (GgN) |
+| `{PERrha}` / `{PERrMha}` / `{PERrN}` | Permanent rainfed crops area (ha / Mha) and N production (GgN) |
+| `{NPEiha}` / `{NPEiMha}` / `{NPEiN}` | Non-permanent irrigated crops area (ha / Mha) and N production (GgN) |
+| `{NPErha}` / `{NPErMha}` / `{NPErN}` | Non-permanent rainfed crops area (ha / Mha) and N production (GgN) |
+| `{MONOGLU}` / `{MONOGMLU}` | Monogastric livestock units (and in millions) |
+| `{RUMIANTSLU}` / `{RUMIANTSMLU}` | Ruminant livestock units (and in millions) |
+| `{LVSTCKTOTN}` | Total N in livestock (`{LIVESTOCK_TO_HUMAN}` + `{LIVESTOCK_EXPORTED}` + `{AN_LS_OTH}`); the vertical label on the livestock box |
+| `{CRPLNDTOTN}` | Total N production from cropland; the vertical label on the cropland box |
+
+### Inputs (N flowing in)
+
+| Label | Meaning |
+|-------|---------|
+| `{CROP_POPIMPORT}` | N from vegetable crops imported, to feed the population |
+| `{CROPS_TO_LIVESTOCK}` | N from crops to livestock (feed) |
+| `{CROPS_TO_POP}` | N from the system's own crops consumed by the population |
+| `{CRTOLVSTCK_R}` | N from crops to ruminant livestock |
+| `{FIX_DEP_CR}` | Symbiotic N fixation and atmospheric N deposition into cropland |
+| `{FIX_DEP_GRASS}` | Symbiotic N fixation and atmospheric N deposition into grassland |
+| `{FIXCR}` | N fixed by crops |
+| `{FIXGR}` | N fixed by grasslands |
+| `{GRASS_TO_LIVESTOCK}` | N from grassland to feed livestock |
+| `{IMANOT}` | N imported for animals, other (mineral compounds, dietary supplements) |
+| `{IMPHMANA}` | N in imported animal products consumed by humans (milk + meat + eggs) |
+| `{IMPORT_ANIMALCR_MONOG}` | N from imported crops to feed monogastric livestock |
+| `{IMPORT_ANIMALCR_RUM}` | N from imported crops to feed ruminant livestock |
+| `{IMPORT_ANIMALCR}` | Sum of the above two (imported crops to feed livestock) |
+| `{LIVESTOCK_TO_CROPS}` | N manure from livestock applied to cropland |
+| `{LIVESTOCK_TO_GRASS}` | N manure from livestock applied to grassland |
+| `{LIVESTOCK_TO_HUMAN}` | N in livestock consumed by humans (needs minus imported animal products) |
+| `{ORGOT}` | N from other organic sources fertilizing cropland (e.g. sewage sludge) |
+| `{SYF_GRASS}` | N from synthetic fertilizers applied to grassland |
+| `{SYNTHF_TOTAL}` | Total N from synthetic fertilizers applied to crops and grassland |
+| `{SYNTHF}` | N from synthetic (mineral) fertilizers applied to crops |
+
+### Outputs (N flowing out)
+
+| Label | Meaning |
+|-------|---------|
+| `{AN_LS_OTH}` | N in animal losses and others (`{AN_LS}` + `{AN_OTH}`) |
+| `{AN_LS}` | N in animal losses |
+| `{AN_OTH}` | N in animal for other uses |
+| `{CROP_EXPORT}` | N from crops exported outside the system |
+| `{CROP_SURPLUS}` | N surplus from crops (deposition + fixation + synthetic + manure + other organic sources, minus feed, human consumption, losses, and exports) |
+| `{CRP_LS_OTHUSES}` | Losses and other uses of N content of crops |
+| `{CRP_LS}` | Losses of N content of crops |
+| `{CRP_OTHUSES}` | N from crop losses from other uses |
+| `{LIVESTOCK_EXPORTED}` | N in livestock exported |
+| `{LIVGASLOSS}` | N losses from livestock through gaseous volatilization |
+| `{LVSTCK_NOEDIBLE}` | N in non-edible material from livestock |
+| `{UNKMANURE}` | N from manure with unknown destination -- after accounting for all known uses, some manure N remains unallocated even under the most conservative assumptions, and is treated as an unknown loss (likely polluting the environment) |
+| `{WASTEWATER}` | N lost in wastewater generated by the human population |
 
 ## Troubleshooting
 

@@ -1,8 +1,10 @@
 create_GRAFS(
-  csv_inputs = "inst/extdata/GRAFS_spain_data.csv.gz", # your data file
+  # bundled example files -- system.file() finds them whether the package is
+  # installed or just loaded from source via devtools::load_all()
+  csv_inputs = system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS"), # your data file
   path_outputs = "./output", # where to save results
-  xml_base = "inst/templates/grafs_auto_v18.xml", # draw.io template
-  arrows_csv = "inst/extdata/GRAFS_arrows_ids.csv", # flow → element ID mappings
+  xml_base = system.file("templates", "grafs_auto_v18.xml", package = "GRAFS"), # draw.io template
+  arrows_csv = system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS"), # flow → element ID mappings
   drawio_exe = find_drawio(), # auto-detects draw.io
   regions = "spain", # column name for regions
   # years to show. Add prev_years to compare with an earlier period (shows change in %).

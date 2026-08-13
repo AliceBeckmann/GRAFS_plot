@@ -99,8 +99,8 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
-  periods = list(list(years = 1930:1931))
+  regions = "spain",
+  periods = list(list(years = 1990:1991))
 )
 
 # Compare two periods with change bubbles
@@ -110,7 +110,7 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(list(years = 2011:2015, prev_years = 1990:1994))
 )
 }

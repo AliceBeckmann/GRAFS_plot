@@ -30,7 +30,7 @@
 #' xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 #' ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 #'
-#' result <- validate_inputs(csv, ids, xml, regions = "Albacete")
+#' result <- validate_inputs(csv, ids, xml, regions = "spain")
 #' }
 #'
 #' @export
