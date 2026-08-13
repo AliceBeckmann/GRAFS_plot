@@ -405,7 +405,9 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   columns: \code{province}, \code{year}, \code{label}, \code{data},
 #'   \code{align}, and optionally \code{arrowColor}. The package includes
 #'   example data accessible via
-#'   \code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")}.
+#'   \code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")},
+#'   drawn from the national-scale nitrogen budget (1990-2015) published in
+#'   Rodriguez et al. (2023) -- see \code{References}.
 #' @param path_outputs Directory for output files. Created automatically if
 #'   it does not exist. Subdirectories \code{xml/} and \code{png/} are created
 #'   inside.
@@ -445,6 +447,12 @@ process_period_region <- function(period_idx, period, regions, d,
 #' Lassaletta, L., et al. (2015). \emph{Global Biogeochemical Cycles}.
 #'
 #' Le Noe, J., et al. (2017). \emph{Science of the Total Environment}.
+#'
+#' Rodriguez, A., Sanz-Cobena, A., Ruiz-Ramos, M., Aguilera, E., Quemada, M.,
+#' Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
+#' through spatial and system scales in the Spanish agro-food system over 26
+#' years. \emph{Science of The Total Environment}, 892, 164467.
+#' \url{https://doi.org/10.1016/j.scitotenv.2023.164467}
 #'
 #' @examples
 #' \dontrun{
