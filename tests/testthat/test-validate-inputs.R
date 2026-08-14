@@ -32,7 +32,7 @@ test_that("validate_inputs checks regions", {
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 
   result <- suppressMessages(
-    validate_inputs(csv, ids, xml, regions = "Albacete")
+    validate_inputs(csv, ids, xml, regions = "spain")
   )
   expect_true(result$ok || !result$ok)  # just shouldn't error
 
@@ -156,7 +156,7 @@ test_that("validate_inputs warns about non-numeric data", {
   expect_true(grepl("non-numeric", all_msgs))
 })
 
-test_that("validate_inputs reports many available regions on missing", {
+test_that("validate_inputs reports available regions on missing", {
   csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
   xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
   ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
@@ -170,7 +170,34 @@ test_that("validate_inputs reports many available regions on missing", {
     }
   )
   all_msgs <- paste(msgs, collapse = " ")
-  # Should show available regions with "..." for truncation
   expect_true(grepl("Available:", all_msgs))
-  expect_true(grepl("total", all_msgs))
+  expect_true(grepl("spain", all_msgs))
+})
+
+test_that("validate_inputs truncates a long list of available regions", {
+  xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
+  ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
+
+  tmp_csv <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp_csv), add = TRUE)
+  writeLines(
+    c(
+      "province,year,label,data,align,arrowColor",
+      sprintf("region_%02d,2000,{FLOW},100,L,NA", 1:12)
+    ),
+    tmp_csv
+  )
+
+  msgs <- character()
+  withCallingHandlers(
+    validate_inputs(tmp_csv, ids, xml, regions = "ZZZ_NoSuchRegion"),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    }
+  )
+  all_msgs <- paste(msgs, collapse = " ")
+  expect_true(grepl("Available: region_01", all_msgs))
+  expect_true(grepl("\\(12 total\\)", all_msgs))
+  expect_false(grepl("region_11", all_msgs))
 })

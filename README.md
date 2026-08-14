@@ -2,6 +2,8 @@
 
 R package for automated creation of GRAFS (General Representation of Agro-Food Systems) diagrams.
 
+Works with any dataset structured in the expected format -- the bundled example covers Spain at the national level, but your own data could represent a different country, or a provincial/regional level instead. The bundled draw.io template can be revised too -- for example, removing arrows for flows you don't want to show -- as long as the arrow ID mapping stays in sync (see "Arrow ID mapping" below).
+
 Reads flow data from CSV files, populates a [draw.io](https://github.com/jgraph/drawio-desktop) XML template with proportional arrow widths and labels, and exports the result as PNG images.
 
 Based on the methodology described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noe et al. (2017).
@@ -55,8 +57,8 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
-  periods = list(list(years = 1930:1931))
+  regions = "spain",
+  periods = list(list(years = 1990:1991))
 )
 ```
 
@@ -73,7 +75,7 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(
     list(years = 2011:2015, prev_years = 1990:1994)
   )
@@ -81,6 +83,9 @@ create_GRAFS(
 ```
 
 Change bubbles are colored by direction: blue for increases, green for decreases (configurable via `increase_color` and `decrease_color`).
+
+To turn off the change bubbles, delete the whole `prev_years = ...` part (a
+period with no `prev_years` gets a plain diagram).
 
 ## Input data format
 
@@ -95,7 +100,19 @@ The input CSV must have these columns:
 | `align`     | Text alignment: `"L"` or `"R"` |
 | `arrowColor`| Optional hex color override (e.g., `#FF0000`), or `NA` |
 
-The package includes example data for Spanish provinces (`GRAFS_spain_data.csv.gz`).
+The package includes example data for Spain at the national level, 1990-2015
+(`GRAFS_spain_data.csv.gz`), from Rodriguez et al. (2023,
+<https://doi.org/10.1016/j.scitotenv.2023.164467>).
+
+## Arrow ID mapping
+
+The `arrows_csv` file maps flow labels to draw.io element IDs. The bundled
+`GRAFS_arrows_ids.csv` maps the 25 flows used in the bundled template.
+
+You can revise the draw.io template itself -- for example, removing arrows
+for flows you don't want to show, or don't have data for. If you remove an
+arrow from the template, remove its row from `arrows_csv` too; if you add a
+new arrow, add a row mapping its label to its new draw.io element ID.
 
 ## Validating inputs
 
@@ -103,7 +120,7 @@ Before generating diagrams, check that your data, template, and arrow mappings
 are consistent:
 
 ```r
-validate_inputs(csv, ids, xml, regions = "Albacete")
+validate_inputs(csv, ids, xml, regions = "spain")
 ```
 
 This reports matched labels, unmapped data, missing regions, and data quality
@@ -122,6 +139,6 @@ issues.
 
 CC BY-NC 4.0
 
-## Author
+## Authors
 
-Alfredo Rodriguez (alfredo.rodriguez@uclm.es)
+Alfredo Rodriguez (alfredo.rodriguez@uclm.es), Catalin Covaci, Alice Beckmann (alice.beckmann@cchs.csic.es, maintainer), Luis Lassaletta

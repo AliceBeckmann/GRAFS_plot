@@ -2,10 +2,11 @@ Package: GRAFS
 Type: Package
 Title: Automated GRAFS Diagram Plotter
 Version: 0.2.0
-Authors@R: person(
-    "Alfredo", "Rodriguez",
-    email = "alfredo.rodriguez@uclm.es",
-    role = c("aut", "cre")
+Authors@R: c(
+    person("Alfredo", "Rodriguez", email = "alfredo.rodriguez@uclm.es", role = "aut"),
+    person("Catalin", "Covaci", role = "aut"),
+    person("Alice", "Beckmann", email = "alice.beckmann@cchs.csic.es", role = c("aut", "cre")),
+    person("Luis", "Lassaletta", role = "aut")
   )
 Description: Automates the creation of GRAFS (General Representation of
     Agro-Food Systems) diagrams as described by Billen et al. (2014),
@@ -15,6 +16,7 @@ Description: Automates the creation of GRAFS (General Representation of
     draw.io desktop application (<https://github.com/jgraph/drawio-desktop>)
     to be installed separately.
 License: CC BY-NC 4.0
+SystemRequirements: draw.io desktop application (https://github.com/jgraph/drawio-desktop)
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 NeedsCompilation: no

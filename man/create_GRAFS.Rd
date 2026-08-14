@@ -17,6 +17,8 @@ create_GRAFS(
   val_max_width = 1000,
   increase_color = "#97cde5",
   decrease_color = "#a9d77f",
+  min_bubble_size = 10,
+  unit = "MgN",
   overwrite = TRUE
 )
 }
@@ -25,7 +27,9 @@ create_GRAFS(
 columns: \code{province}, \code{year}, \code{label}, \code{data},
 \code{align}, and optionally \code{arrowColor}. The package includes
 example data accessible via
-\code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")}.}
+\code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")},
+drawn from the national-scale nitrogen budget (1990-2015) published in
+Rodriguez et al. (2023) -- see \code{References}.}
 
 \item{path_outputs}{Directory for output files. Created automatically if
 it does not exist. Subdirectories \code{xml/} and \code{png/} are created
@@ -64,6 +68,15 @@ computing percentage changes. Example:
 \item{decrease_color}{Hex color for negative change bubbles
 (default \code{"#a9d77f"}).}
 
+\item{min_bubble_size}{Minimum diameter of a change bubble, in diagram
+units (default 10). Change bubbles scale with the square root of the
+percentage change, floored at this size so small changes stay legible
+and capped at 45 so large ones do not overflow the diagram.}
+
+\item{unit}{Unit label displayed in the Reference box and next to total N
+values (default \code{"MgN"}). Set to \code{"GgN"} for gigagram data, or
+any string matching the units of your input CSV.}
+
 \item{overwrite}{Overwrite existing output files (default \code{TRUE}).}
 }
 \value{
@@ -91,8 +104,8 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
-  periods = list(list(years = 1930:1931))
+  regions = "spain",
+  periods = list(list(years = 1990:1991))
 )
 
 # Compare two periods with change bubbles
@@ -102,10 +115,11 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "Albacete",
+  regions = "spain",
   periods = list(list(years = 2011:2015, prev_years = 1990:1994))
 )
 }
+
 }
 \references{
 Billen, G., et al. (2014). \emph{Regional Studies}.
@@ -113,4 +127,10 @@ Billen, G., et al. (2014). \emph{Regional Studies}.
 Lassaletta, L., et al. (2015). \emph{Global Biogeochemical Cycles}.
 
 Le Noe, J., et al. (2017). \emph{Science of the Total Environment}.
+
+Rodriguez, A., Sanz-Cobena, A., Ruiz-Ramos, M., Aguilera, E., Quemada, M.,
+Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
+through spatial and system scales in the Spanish agro-food system over 26
+years. \emph{Science of The Total Environment}, 892, 164467.
+\url{https://doi.org/10.1016/j.scitotenv.2023.164467}
 }

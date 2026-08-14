@@ -30,7 +30,7 @@
 #' xml <- system.file("templates", "grafs_auto_v18.xml", package = "GRAFS")
 #' ids <- system.file("extdata", "GRAFS_arrows_ids.csv", package = "GRAFS")
 #'
-#' result <- validate_inputs(csv, ids, xml, regions = "Albacete")
+#' result <- validate_inputs(csv, ids, xml, regions = "spain")
 #' }
 #'
 #' @export
@@ -43,6 +43,7 @@ validate_inputs <- function(csv_inputs, arrows_csv, xml_base, regions = NULL) {
 
   # Read inputs
   d <- readr::read_csv(csv_inputs, show_col_types = FALSE)
+  d <- add_crplndtotn(d)
   arrows <- readr::read_csv(arrows_csv, show_col_types = FALSE)
   doc <- xml2::read_xml(xml_base)
 

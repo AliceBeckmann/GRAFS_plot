@@ -8,7 +8,7 @@ find_drawio()
 }
 \value{
 Path to the draw.io executable as a character string, or
-\code{NULL} if not found.
+  \code{NULL} if not found.
 }
 \description{
 Searches common installation paths for the draw.io desktop application
@@ -22,4 +22,5 @@ if (is.null(drawio)) {
   message("Install draw.io from https://github.com/jgraph/drawio-desktop")
 }
 }
+
 }

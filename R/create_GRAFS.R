@@ -178,9 +178,57 @@ year_info <- function(years) {
   label
 }
 
+#' Add derived total-cropland-N rows where missing
+#'
+#' \code{\{CRPLNDTOTN\}} (total cropland N) is not always a raw value in the
+#' input data -- some datasets provide it precomputed, others expect it
+#' derived as the sum of the five underlying crop-type components. Adds a
+#' \code{\{CRPLNDTOTN\}} row for each province/year that has all five
+#' components as numeric values but no \code{\{CRPLNDTOTN\}} row of its own;
+#' leaves data that already has it untouched. A province/year missing a
+#' component, or with a non-numeric one, gets no row at all rather than a
+#' partial total.
+#'
+#' @keywords internal
+add_crplndtotn <- function(d) {
+  components <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
+  comp_rows <- d[d$label %in% components, ]
+  comp_rows$data <- suppressWarnings(as.numeric(comp_rows$data))
+  comp_rows <- comp_rows[!is.na(comp_rows$data), ]
+  if (nrow(comp_rows) == 0) {
+    return(d)
+  }
+
+  has_total <- paste(d$province, d$year)[d$label == "{CRPLNDTOTN}"]
+  groups <- split(comp_rows, paste(comp_rows$province, comp_rows$year))
+  groups <- groups[!names(groups) %in% has_total]
+  totals <- lapply(groups, crplndtotn_row, components = components)
+  totals <- totals[!vapply(totals, is.null, logical(1))]
+  if (length(totals) == 0) {
+    return(d)
+  }
+
+  rbind(d, do.call(rbind, totals))
+}
+
+crplndtotn_row <- function(rows, components) {
+  rows <- rows[!duplicated(rows$label), ]
+  if (!all(components %in% rows$label)) {
+    return(NULL)
+  }
+
+  # Built from a component row so every column of the input data -- including
+  # any the package does not know about -- is carried over unchanged.
+  row <- rows[1, ]
+  row$label <- "{CRPLNDTOTN}"
+  row$data <- sum(rows$data)
+  row
+}
+
 prepare_data <- function(csv_path) {
   d <- readr::read_csv(csv_path, show_col_types = FALSE)
   d <- unique(d)
+  d <- add_crplndtotn(d)
   d[!grepl("WIDTH_MAX", d$label), ]
 }
 
@@ -211,7 +259,7 @@ process_label <- function(doc, x, xch, label, years, years_change,
   if (label == "{PROVINCE_NAME}") {
     mean_val <- x$data[1]
   } else if (label == "{YEAR}") {
-    mean_val <- paste0("mean_", min(years), "-", max(years))
+    mean_val <- year_info(years)
   } else {
     x$data <- as.numeric(x$data)
     mean_val <- round(mean(x$data), decimals)
@@ -373,7 +421,9 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   columns: \code{province}, \code{year}, \code{label}, \code{data},
 #'   \code{align}, and optionally \code{arrowColor}. The package includes
 #'   example data accessible via
-#'   \code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")}.
+#'   \code{system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")},
+#'   drawn from the national-scale nitrogen budget (1990-2015) published in
+#'   Rodriguez et al. (2023) -- see \code{References}.
 #' @param path_outputs Directory for output files. Created automatically if
 #'   it does not exist. Subdirectories \code{xml/} and \code{png/} are created
 #'   inside.
@@ -400,6 +450,10 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   (default \code{"#97cde5"}).
 #' @param decrease_color Hex color for negative change bubbles
 #'   (default \code{"#a9d77f"}).
+#' @param min_bubble_size Minimum diameter of a change bubble, in diagram
+#'   units (default 10). Change bubbles scale with the square root of the
+#'   percentage change, floored at this size so small changes stay legible
+#'   and capped at 45 so large ones do not overflow the diagram.
 #' @param unit Unit label displayed in the Reference box and next to total N
 #'   values (default \code{"MgN"}). Set to \code{"GgN"} for gigagram data, or
 #'   any string matching the units of your input CSV.
@@ -414,6 +468,12 @@ process_period_region <- function(period_idx, period, regions, d,
 #'
 #' Le Noe, J., et al. (2017). \emph{Science of the Total Environment}.
 #'
+#' Rodriguez, A., Sanz-Cobena, A., Ruiz-Ramos, M., Aguilera, E., Quemada, M.,
+#' Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
+#' through spatial and system scales in the Spanish agro-food system over 26
+#' years. \emph{Science of The Total Environment}, 892, 164467.
+#' \url{https://doi.org/10.1016/j.scitotenv.2023.164467}
+#'
 #' @examples
 #' \dontrun{
 #' csv <- system.file("extdata", "GRAFS_spain_data.csv.gz", package = "GRAFS")
@@ -427,8 +487,8 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   xml_base = xml,
 #'   arrows_csv = ids,
 #'   drawio_exe = drawio,
-#'   regions = "Albacete",
-#'   periods = list(list(years = 1930:1931))
+#'   regions = "spain",
+#'   periods = list(list(years = 1990:1991))
 #' )
 #'
 #' # Compare two periods with change bubbles
@@ -438,7 +498,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #'   xml_base = xml,
 #'   arrows_csv = ids,
 #'   drawio_exe = drawio,
-#'   regions = "Albacete",
+#'   regions = "spain",
 #'   periods = list(list(years = 2011:2015, prev_years = 1990:1994))
 #' )
 #' }
