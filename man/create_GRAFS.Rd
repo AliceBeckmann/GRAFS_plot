@@ -83,7 +83,7 @@ any string matching the units of your input CSV.}
 Invisible character vector of output PNG file paths.
 }
 \description{
-Generate GRAFS (General Representation of Agro-Food Systems) diagrams
+Generate GRAFS (Generalized Representation of Agro-Food Systems) diagrams
 by populating a draw.io XML template with data and exporting to PNG.
 }
 \details{

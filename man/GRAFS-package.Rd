@@ -6,9 +6,9 @@
 \alias{GRAFS}
 \title{GRAFS: Automated GRAFS Diagram Plotter}
 \description{
-Automates the creation of GRAFS (General Representation of Agro-Food Systems) diagrams as described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noe et al. (2017). Reads flow data from CSV files, populates a draw.io XML template with proportional arrow widths and labels, and exports the result as PNG images. Requires the draw.io desktop application (\url{https://github.com/jgraph/drawio-desktop}) to be installed separately.
+Automates the creation of GRAFS (Generalized Representation of Agro-Food Systems) diagrams as described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noe et al. (2017). Reads flow data from CSV files, populates a draw.io XML template with proportional arrow widths and labels, and exports the result as PNG images. Requires the draw.io desktop application (\url{https://github.com/jgraph/drawio-desktop}) to be installed separately.
 
-Automates the creation of GRAFS (General Representation of Agro-Food
+Automates the creation of GRAFS (Generalized Representation of Agro-Food
 Systems) diagrams. Reads flow data from CSV files, populates a draw.io
 XML template with proportional arrow widths and labels, and exports the
 result as PNG images.

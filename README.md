@@ -1,8 +1,10 @@
 # GRAFS
 
-R package for automated creation of GRAFS (General Representation of Agro-Food Systems) diagrams.
+R package for automated creation of GRAFS (Generalized Representation of Agro-Food Systems) diagrams.
 
-Works with any dataset structured in the expected format -- the bundled example covers Spain at the national level, but your own data could represent a different country, or a provincial/regional level instead. The bundled draw.io template can be revised too -- for example, removing arrows for flows you don't want to show -- as long as the arrow ID mapping stays in sync (see "Arrow ID mapping" below).
+Automatically generates GRAFS diagrams for any combination of years, countries, or provinces/regions, tracking nitrogen or other nutrient flows through the agro-food system.
+
+Works with any dataset structured in the expected format -- the bundled example covers nitrogen flows for Spain at the national level, 1990-2015, but your own data could represent different countries, provinces, years, or nutrients instead. The bundled draw.io template can be revised too, as long as the arrow ID mapping stays in sync (see "Arrow ID mapping" below).
 
 Reads flow data from CSV files, populates a [draw.io](https://github.com/jgraph/drawio-desktop) XML template with proportional arrow widths and labels, and exports the result as PNG images.
 
@@ -57,8 +59,9 @@ create_GRAFS(
   xml_base = xml,
   arrows_csv = ids,
   drawio_exe = drawio,
-  regions = "spain",
-  periods = list(list(years = 1990:1991))
+  regions = "spain", # choose the region you want to show
+  periods = list(list(years = 1990:1991)), # change to the years you want to show
+  val_max_width = 1000 # tune to your data's scale (see "Key parameters" below)
 )
 ```
 
@@ -96,7 +99,7 @@ The input CSV must have these columns:
 | `province`  | Region/geographic unit name |
 | `year`      | Integer year |
 | `label`     | Flow label matching the draw.io template (e.g., `{CROPS_TO_POP}`) |
-| `data`      | Numeric value (dot as decimal separator) |
+| `data`      | Numeric value (dot as decimal separator), or character text for `{PROVINCE_NAME}` |
 | `align`     | Text alignment: `"L"` or `"R"` |
 | `arrowColor`| Optional hex color override (e.g., `#FF0000`), or `NA` |
 
@@ -110,7 +113,7 @@ The `arrows_csv` file maps flow labels to draw.io element IDs. The bundled
 `GRAFS_arrows_ids.csv` maps the 25 flows used in the bundled template.
 
 You can revise the draw.io template itself -- for example, removing arrows
-for flows you don't want to show, or don't have data for. If you remove an
+for flows you don't want to show. If you remove an
 arrow from the template, remove its row from `arrows_csv` too; if you add a
 new arrow, add a row mapping its label to its new draw.io element ID.
 

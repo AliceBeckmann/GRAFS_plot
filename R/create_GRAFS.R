@@ -410,7 +410,7 @@ process_period_region <- function(period_idx, period, regions, d,
 
 #' Create GRAFS Diagrams
 #'
-#' Generate GRAFS (General Representation of Agro-Food Systems) diagrams
+#' Generate GRAFS (Generalized Representation of Agro-Food Systems) diagrams
 #' by populating a draw.io XML template with data and exporting to PNG.
 #'
 #' The function reads flow data from a CSV file, applies it to a draw.io
