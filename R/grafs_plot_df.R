@@ -45,6 +45,7 @@ create_grafs_plot_df <- function() {
     df_animal_losses
   )
   df_livestock_surplus <- .create_livestock_surplus_df(df_all_flows)
+  df_wastewater_surplus <- .create_wastewater_surplus_df(df_all_flows, prov_destiny_df)
 
   df_combined <- .combine_and_finalize_df(
     crop_livestock_flows = df_flow,
@@ -55,6 +56,7 @@ create_grafs_plot_df <- function() {
     df_animal_losses = df_animal_losses,
     df_livestock_total = df_livestock_total,
     df_livestock_surplus = df_livestock_surplus,
+    df_wastewater_surplus = df_wastewater_surplus,
     df_land_surplus = df_land_surplus
   )
 
@@ -191,6 +193,7 @@ create_grafs_plot_df <- function() {
     "{GRASS_SURPLUS}",
     "{LIVGASLOSS}",
     "{WASTEWATER}",
+    "{ORGOT}",
     "{CRPLNDTOTN}",
     "{GREHN}",
     "{FORN}",
@@ -358,7 +361,8 @@ create_grafs_plot_df <- function() {
     "{IMPORT_ANIMALCR}",
     "{IMANOTR}",
     "{IMANOTM}",
-    "{IMANOT}"
+    "{IMANOT}",
+    "{ORGOT}"
   )
 
   dplyr::bind_rows(
@@ -469,7 +473,7 @@ create_grafs_plot_df <- function() {
         Origin == "Synthetic" &
           Destiny == "semi_natural_agroecosystems" ~
           "{SYF_GRASS}",
-        Origin == "People" ~ "{WASTEWATER}",
+        Origin == "People" & Destiny == "Cropland" ~ "{ORGOT}",
         TRUE ~ NA_character_
       )
     ) |>
@@ -937,6 +941,58 @@ create_grafs_plot_df <- function() {
     dplyr::select(province, year, label, data = surplus, align)
 }
 
+#' Create wastewater nitrogen surplus dataset (population compartment).
+#'
+#' @description
+#' Calculates nitrogen lost to the environment as wastewater, as the
+#' difference between total N consumed by the population (crops, imports,
+#' and livestock products) and the N returned to land (`{ORGOT}`).
+#'
+#' @param df_all_flows A tibble binding all crop and livestock N flow datasets.
+#' @param prov_destiny_df A tibble of N flows with columns `Origin`, `Destiny`,
+#'   `Province_name`, `Year`, and `MgN`.
+#'
+#' @return
+#' A tibble with columns `province`, `year`, `label` (`{WASTEWATER}`), `data`
+#' (surplus in MgN), and `align`.
+#'
+#' @noRd
+.create_wastewater_surplus_df <- function(df_all_flows, prov_destiny_df) {
+  input_labels <- c(
+    "{CROPS_TO_POP}",
+    "{CROP_POPIMPORT}",
+    "{LIVESTOCK_TO_HUMAN}",
+    "{IMPHMANA}"
+  )
+
+  df_inputs <- df_all_flows |>
+    dplyr::filter(label %in% input_labels) |>
+    dplyr::group_by(province, year) |>
+    dplyr::summarise(
+      input = sum(as.numeric(data), na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  df_returned <- prov_destiny_df |>
+    dplyr::filter(
+      Origin == "People",
+      Destiny %in% c("Cropland", "semi_natural_agroecosystems")
+    ) |>
+    dplyr::group_by(Province_name, Year) |>
+    dplyr::summarise(returned = sum(MgN, na.rm = TRUE), .groups = "drop") |>
+    dplyr::rename(province = Province_name, year = Year)
+
+  dplyr::full_join(df_inputs, df_returned, by = c("province", "year")) |>
+    dplyr::mutate(
+      input = dplyr::coalesce(input, 0),
+      returned = dplyr::coalesce(returned, 0),
+      data = input - returned,
+      label = "{WASTEWATER}",
+      align = "R"
+    ) |>
+    dplyr::select(province, year, label, data, align)
+}
+
 #' Create nitrogen flow dataset by province.
 #'
 #' @description
@@ -1401,6 +1457,7 @@ create_grafs_plot_df <- function() {
 #' @param df_animal_losses A tibble of animal N losses.
 #' @param df_livestock_total A tibble of total livestock N.
 #' @param df_livestock_surplus A tibble of livestock surplus N.
+#' @param df_wastewater_surplus A tibble of wastewater surplus N.
 #' @param df_land_surplus A tibble of land surplus N.
 #'
 #' @return
@@ -1416,6 +1473,7 @@ create_grafs_plot_df <- function() {
   df_animal_losses,
   df_livestock_total,
   df_livestock_surplus,
+  df_wastewater_surplus,
   df_land_surplus
 ) {
   df_combi <- dplyr::bind_rows(
@@ -1427,6 +1485,7 @@ create_grafs_plot_df <- function() {
     .select_flow_cols(df_animal_losses),
     .select_flow_cols(df_livestock_total),
     .select_flow_cols(df_livestock_surplus),
+    .select_flow_cols(df_wastewater_surplus),
     .select_flow_cols(df_land_surplus)
   ) |>
     dplyr::arrange(province, year, label) |>
