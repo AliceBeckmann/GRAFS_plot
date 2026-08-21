@@ -31,7 +31,7 @@ create_grafs_plot_df <- function() {
   df_milk <- .create_milk_df(prov_destiny_df)
   df_livestock_total <- .create_livestock_total_df(prov_destiny_df)
 
-  df_crplndtot <- .create_cropland_total_df(df_flow)
+  df_crplndtot <- .create_cropland_total_df(df_flow, df_processing_losses)
 
   df_all_flows <- dplyr::bind_rows(
     df_flow,
@@ -109,22 +109,26 @@ create_grafs_plot_df <- function() {
     dplyr::bind_rows(nat_destiny_df)
 }
 
-.create_cropland_total_df <- function(df_flow) {
+.create_cropland_total_df <- function(df_flow, df_processing_losses) {
   cropland_labels <- c(
     "{CROP_EXPORT}",
     "{CROPS_TO_POP}",
-    "{CROPS_TO_LIVESTOCK}"
+    "{CROPS_TO_LIVESTOCK}",
+    "{CRP_PROCLOSS}"
   )
 
-  df_prov <- df_flow |>
-    dplyr::filter(province != "Spain", label %in% cropland_labels) |>
-    dplyr::mutate(data = suppressWarnings(as.numeric(data))) |>
+  df_source <- dplyr::bind_rows(df_flow, df_processing_losses) |>
+    dplyr::filter(label %in% cropland_labels) |>
+    dplyr::mutate(data = suppressWarnings(as.numeric(data)))
+
+  df_prov <- df_source |>
+    dplyr::filter(province != "Spain") |>
     dplyr::group_by(province, year) |>
     dplyr::summarise(data = sum(data, na.rm = TRUE), .groups = "drop") |>
     dplyr::mutate(label = "{CRPLNDTOTN}", align = "R")
 
-  df_spain <- df_flow |>
-    dplyr::filter(province == "Spain", label %in% cropland_labels) |>
+  df_spain <- df_source |>
+    dplyr::filter(province == "Spain") |>
     dplyr::group_by(year) |>
     dplyr::summarise(data = sum(data, na.rm = TRUE), .groups = "drop") |>
     dplyr::mutate(province = "Spain", label = "{CRPLNDTOTN}", align = "R")
