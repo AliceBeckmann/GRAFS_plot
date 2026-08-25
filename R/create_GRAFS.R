@@ -475,7 +475,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #' Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
 #' through spatial and system scales in the Spanish agro-food system over 26
 #' years. \emph{Science of The Total Environment}, 892, 164467.
-#' \url{https://doi.org/10.1016/j.scitotenv.2023.164467}
+#' \doi{10.1016/j.scitotenv.2023.164467}
 #'
 #' @examples
 #' \dontrun{
