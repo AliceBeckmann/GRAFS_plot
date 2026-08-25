@@ -45,6 +45,7 @@ Rodriguez, A., et al. (2023). \emph{Science of the Total Environment}
 
 Authors:
 \itemize{
+  \item Alice Beckmann \email{alice.beckmann@cchs.csic.es}
   \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es}
   \item Catalin Covaci
   \item Luis Lassaletta

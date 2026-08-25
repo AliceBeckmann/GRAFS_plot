@@ -140,7 +140,7 @@ issues.
 
 ## License
 
-CC BY-NC 4.0
+GPL (>= 3)
 
 ## Authors
 

@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "GRAFS: Automated GRAFS Diagram Plotter"
+version: 0.2.0
+license: GPL-3.0-or-later
+authors:
+  - given-names: Alfredo
+    family-names: Rodriguez
+    email: alfredo.rodriguez@uclm.es
+  - given-names: Catalin
+    family-names: Covaci
+  - given-names: Alice
+    family-names: Beckmann
+    email: alice.beckmann@cchs.csic.es
+  - given-names: Luis
+    family-names: Lassaletta

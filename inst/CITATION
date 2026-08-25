@@ -1,0 +1,14 @@
+citHeader("To cite GRAFS in publications, please use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "GRAFS: Automated GRAFS Diagram Plotter",
+  author  = c(
+    person("Alfredo", "Rodriguez"),
+    person("Catalin", "Covaci"),
+    person("Alice", "Beckmann"),
+    person("Luis", "Lassaletta")
+  ),
+  year    = "2026",
+  note    = sprintf("R package version %s", meta$Version)
+)

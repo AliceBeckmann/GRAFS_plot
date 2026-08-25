@@ -189,6 +189,9 @@ year_info <- function(years) {
 #' component, or with a non-numeric one, gets no row at all rather than a
 #' partial total.
 #'
+#' @return The input data frame \code{d}, with derived
+#'   \code{\{CRPLNDTOTN\}} rows appended where applicable.
+#'
 #' @keywords internal
 add_crplndtotn <- function(d) {
   components <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")

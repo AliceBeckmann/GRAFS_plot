@@ -15,7 +15,7 @@ Description: Automates the creation of GRAFS (Generalized Representation of
     widths and labels, and exports the result as PNG images. Requires the
     draw.io desktop application (<https://github.com/jgraph/drawio-desktop>)
     to be installed separately.
-License: CC BY-NC 4.0
+License: GPL (>= 3)
 SystemRequirements: draw.io desktop application (https://github.com/jgraph/drawio-desktop)
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
@@ -30,4 +30,4 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.1.0

@@ -7,6 +7,9 @@
 ^README\.md$
 ^\.github$
 ^LICENSE\.md$
+^cran-comments\.md$
+^\.claude$
+^CITATION\.cff$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
