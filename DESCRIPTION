@@ -3,10 +3,13 @@ Type: Package
 Title: Automated GRAFS Diagram Plotter
 Version: 0.2.0
 Authors@R: c(
-    person("Alfredo", "Rodriguez", email = "alfredo.rodriguez@uclm.es", role = "aut"),
-    person("Catalin", "Covaci", role = "aut"),
-    person("Alice", "Beckmann", email = "alice.beckmann@cchs.csic.es", role = c("aut", "cre")),
-    person("Luis", "Lassaletta", role = "aut")
+    person("Alfredo", "Rodriguez", email = "alfredo.rodriguez@uclm.es", role = c("aut", "cph")),
+    person("Catalin", "Covaci", email = "catalin.covaci@csic.es", role = "ctb",
+      comment = c(ORCID = "0009-0005-2186-5972")),
+    person("Alice", "Beckmann", email = "alice.beckmann@cchs.csic.es", role = c("aut", "cre"),
+      comment = c(ORCID = "0009-0009-6840-0258")),
+    person("Luis", "Lassaletta", email = "luis.lassaletta@upm.es", role = "aut",
+      comment = c(ORCID = "0000-0001-9428-2149"))
   )
 Description: Automates the creation of GRAFS (Generalized Representation of
     Agro-Food Systems) diagrams as described by Billen et al. (2014),

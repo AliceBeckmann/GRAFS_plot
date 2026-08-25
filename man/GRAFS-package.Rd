@@ -41,14 +41,18 @@ Rodriguez, A., et al. (2023). \emph{Science of the Total Environment}
 892: 164467.
 }
 \author{
-\strong{Maintainer}: Alice Beckmann \email{alice.beckmann@cchs.csic.es}
+\strong{Maintainer}: Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
 
 Authors:
 \itemize{
-  \item Alice Beckmann \email{alice.beckmann@cchs.csic.es}
-  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es}
-  \item Catalin Covaci
-  \item Luis Lassaletta
+  \item Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
+  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es} [copyright holder]
+  \item Luis Lassaletta \email{luis.lassaletta@upm.es} (\href{https://orcid.org/0000-0001-9428-2149}{ORCID})
+}
+
+Other contributors:
+\itemize{
+  \item Catalin Covaci \email{catalin.covaci@csic.es} (\href{https://orcid.org/0009-0005-2186-5972}{ORCID}) [contributor]
 }
 
 }

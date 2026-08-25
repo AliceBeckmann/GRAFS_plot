@@ -10,8 +10,13 @@ authors:
     email: alfredo.rodriguez@uclm.es
   - given-names: Catalin
     family-names: Covaci
+    email: catalin.covaci@csic.es
+    orcid: "https://orcid.org/0009-0005-2186-5972"
   - given-names: Alice
     family-names: Beckmann
     email: alice.beckmann@cchs.csic.es
+    orcid: "https://orcid.org/0009-0009-6840-0258"
   - given-names: Luis
     family-names: Lassaletta
+    email: luis.lassaletta@upm.es
+    orcid: "https://orcid.org/0000-0001-9428-2149"
