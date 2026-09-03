@@ -40,13 +40,21 @@ Le Noe, J., et al. (2017). \emph{Science of the Total Environment}.
 Rodriguez, A., et al. (2023). \emph{Science of the Total Environment}
 892: 164467.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/AliceBeckmann/GRAFS_plot}
+  \item Report bugs at \url{https://github.com/AliceBeckmann/GRAFS_plot/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
 
 Authors:
 \itemize{
   \item Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
-  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es} [copyright holder]
+  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es} (\href{https://orcid.org/0000-0001-7987-1623}{ORCID}) [copyright holder]
   \item Luis Lassaletta \email{luis.lassaletta@upm.es} (\href{https://orcid.org/0000-0001-9428-2149}{ORCID})
 }
 

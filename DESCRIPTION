@@ -20,6 +20,8 @@ Description: Automates the creation of GRAFS (Generalized Representation of
     draw.io desktop application (<https://github.com/jgraph/drawio-desktop>)
     to be installed separately.
 License: GPL (>= 3)
+URL: https://github.com/AliceBeckmann/GRAFS_plot
+BugReports: https://github.com/AliceBeckmann/GRAFS_plot/issues
 SystemRequirements: draw.io desktop application (https://github.com/jgraph/drawio-desktop)
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
