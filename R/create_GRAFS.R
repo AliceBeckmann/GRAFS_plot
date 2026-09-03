@@ -189,6 +189,9 @@ year_info <- function(years) {
 #' component, or with a non-numeric one, gets no row at all rather than a
 #' partial total.
 #'
+#' @return The input data frame \code{d}, with derived
+#'   \code{\{CRPLNDTOTN\}} rows appended where applicable.
+#'
 #' @keywords internal
 add_crplndtotn <- function(d) {
   components <- c("{PERrN}", "{PERiN}", "{NPErN}", "{NPEiN}", "{GREHN}")
@@ -410,7 +413,7 @@ process_period_region <- function(period_idx, period, regions, d,
 
 #' Create GRAFS Diagrams
 #'
-#' Generate GRAFS (General Representation of Agro-Food Systems) diagrams
+#' Generate GRAFS (Generalized Representation of Agro-Food Systems) diagrams
 #' by populating a draw.io XML template with data and exporting to PNG.
 #'
 #' The function reads flow data from a CSV file, applies it to a draw.io
@@ -472,7 +475,7 @@ process_period_region <- function(period_idx, period, regions, d,
 #' Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
 #' through spatial and system scales in the Spanish agro-food system over 26
 #' years. \emph{Science of The Total Environment}, 892, 164467.
-#' \url{https://doi.org/10.1016/j.scitotenv.2023.164467}
+#' \doi{10.1016/j.scitotenv.2023.164467}
 #'
 #' @examples
 #' \dontrun{

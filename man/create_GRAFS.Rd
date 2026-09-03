@@ -83,7 +83,7 @@ any string matching the units of your input CSV.}
 Invisible character vector of output PNG file paths.
 }
 \description{
-Generate GRAFS (General Representation of Agro-Food Systems) diagrams
+Generate GRAFS (Generalized Representation of Agro-Food Systems) diagrams
 by populating a draw.io XML template with data and exporting to PNG.
 }
 \details{
@@ -132,5 +132,5 @@ Rodriguez, A., Sanz-Cobena, A., Ruiz-Ramos, M., Aguilera, E., Quemada, M.,
 Billen, G., Garnier, J., Lassaletta, L. (2023). Nesting nitrogen budgets
 through spatial and system scales in the Spanish agro-food system over 26
 years. \emph{Science of The Total Environment}, 892, 164467.
-\url{https://doi.org/10.1016/j.scitotenv.2023.164467}
+\doi{10.1016/j.scitotenv.2023.164467}
 }

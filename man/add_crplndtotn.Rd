@@ -6,6 +6,10 @@
 \usage{
 add_crplndtotn(d)
 }
+\value{
+The input data frame \code{d}, with derived
+  \code{\{CRPLNDTOTN\}} rows appended where applicable.
+}
 \description{
 \code{\{CRPLNDTOTN\}} (total cropland N) is not always a raw value in the
 input data -- some datasets provide it precomputed, others expect it

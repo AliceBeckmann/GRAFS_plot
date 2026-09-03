@@ -1,5 +1,5 @@
 ---
-title: "Getting Started with GRAFS"
+title: "Getting started with GRAFS"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting Started with GRAFS}
@@ -17,11 +17,10 @@ knitr::opts_chunk$set(
 
 ## What are GRAFS diagrams?
 
-GRAFS (General Representation of Agro-Food Systems) diagrams are flow diagrams
+GRAFS (Generalized Representation of Agro-Food Systems) diagrams are flow diagrams
 that visualize nitrogen (or other nutrient) budgets in agricultural systems.
 They show the flows between compartments such as cropland, grassland, livestock,
-and human population, making it possible to understand the structure and
-efficiency of agro-food systems at regional scales.
+and human population, making it possible to understand the structure of agro-food systems at national or regional scales.
 
 The methodology was developed by Billen et al. (2014), Lassaletta et al.
 (2015), and Le Noe et al. (2017).
@@ -177,6 +176,10 @@ This generates a diagram where:
 - Blue bubbles (default) indicate increases
 - Green bubbles (default) indicate decreases
 
+If you don't need this comparison, delete the whole `prev_years = ...` part
+(as in the "Processing multiple periods" example above, which has no
+`prev_years`) -- no change bubbles will be drawn.
+
 You can customize the colors:
 
 ```{r colors}
@@ -232,7 +235,7 @@ The input CSV must have these columns:
 | `province`   | character | Region name (used to filter and label diagrams) |
 | `year`       | integer   | Year of the observation |
 | `label`      | character | Flow label matching the template (e.g., `{CROPS_TO_POP}`) |
-| `data`       | numeric   | Flow value (dot as decimal separator) |
+| `data`       | numeric (character for `{PROVINCE_NAME}`) | Flow value (dot as decimal separator), or the region name for `{PROVINCE_NAME}` |
 | `align`      | character | Text alignment: `"L"` or `"R"` |
 | `arrowColor` | character | Optional hex color (e.g., `#FF0000`), or `NA` |
 
@@ -240,17 +243,19 @@ Example rows:
 
 ```
 province,year,label,data,align,arrowColor
-Albacete,2010,{CROPS_TO_POP},245.5,L,NA
-Albacete,2010,{LIVESTOCK_TO_HUMAN},180.3,R,NA
-Albacete,2010,{PROVINCE_NAME},Albacete,L,NA
+spain,2010,{CROPS_TO_POP},245.5,L,NA
+spain,2010,{LIVESTOCK_TO_HUMAN},180.3,R,NA
+spain,2010,{PROVINCE_NAME},Spain,L,NA
 ```
 
 ### Special labels
 
 Two labels have special handling:
 
-- `{PROVINCE_NAME}`: Replaced with the region name text (not an arrow)
-- `{YEAR}`: Replaced with a formatted year range like `2011-2015`
+- `{PROVINCE_NAME}`: Replaced with the region name text from the CSV's `data`
+  column (not an arrow)
+- `{YEAR}`: Automatically replaced with a formatted year range like
+  `2011-2015`, derived from the `years` you pass in -- no CSV value needed
 
 ### Arrow ID mapping
 
@@ -258,7 +263,7 @@ The `arrows_csv` file maps flow labels to internal draw.io element IDs. The
 bundled `GRAFS_arrows_ids.csv` maps 25 standard GRAFS flows.
 
 You can revise the draw.io template itself -- for example, removing arrows
-for flows you don't want to show, or don't have data for. If you modify the
+for flows you don't want to show. If you modify the
 template to add new arrows, add their IDs to `arrows_csv`; if you remove
 arrows, remove the corresponding rows from `arrows_csv` too.
 
@@ -291,7 +296,7 @@ cover every label if you extend the template with your own.
 | Label | Meaning |
 |-------|---------|
 | `{PROVINCE_NAME}` | Name of the study area |
-| `{YEAR}` | The year or year range shown in the diagram |
+| `{YEAR}` | The year range shown in the diagram |
 | `{YEARCHANGE}` | The comparison year range shown in the diagram (when a comparison period is requested) |
 | `{KM2_PROVINCE}` | Area of the study region in km² (named "province" even when the study area isn't a province) |
 | `{WIDTH_MAX}` | The data value that maps to the maximum arrow width in the diagram |
@@ -322,14 +327,14 @@ cover every label if you extend the template with your own.
 | `{FIXGR}` | N fixed by grasslands |
 | `{GRASS_TO_LIVESTOCK}` | N from grassland to feed livestock |
 | `{IMANOT}` | N imported for animals, other (mineral compounds, dietary supplements) |
-| `{IMPHMANA}` | N in imported animal products consumed by humans (milk + meat + eggs) |
+| `{IMPHMANA}` | N in imported animal products consumed by humans |
 | `{IMPORT_ANIMALCR_MONOG}` | N from imported crops to feed monogastric livestock |
 | `{IMPORT_ANIMALCR_RUM}` | N from imported crops to feed ruminant livestock |
 | `{IMPORT_ANIMALCR}` | Sum of the above two (imported crops to feed livestock) |
 | `{LIVESTOCK_TO_CROPS}` | N manure from livestock applied to cropland |
 | `{LIVESTOCK_TO_GRASS}` | N manure from livestock applied to grassland |
 | `{LIVESTOCK_TO_HUMAN}` | N in livestock consumed by humans (needs minus imported animal products) |
-| `{ORGOT}` | N from other organic sources fertilizing cropland (e.g. sewage sludge) |
+| `{ORGOT}` | N from other organic sources fertilizing cropland (e.g. urban waste) |
 | `{SYF_GRASS}` | N from synthetic fertilizers applied to grassland |
 | `{SYNTHF_TOTAL}` | Total N from synthetic fertilizers applied to crops and grassland |
 | `{SYNTHF}` | N from synthetic (mineral) fertilizers applied to crops |
@@ -349,7 +354,7 @@ cover every label if you extend the template with your own.
 | `{LIVESTOCK_EXPORTED}` | N in livestock exported |
 | `{LIVGASLOSS}` | N losses from livestock through gaseous volatilization |
 | `{LVSTCK_NOEDIBLE}` | N in non-edible material from livestock |
-| `{UNKMANURE}` | N from manure with unknown destination -- after accounting for all known uses, some manure N remains unallocated even under the most conservative assumptions, and is treated as an unknown loss (likely polluting the environment) |
+| `{UNKMANURE}` | N from manure with unknown destination -- after accounting for all known uses, some manure N remains unallocated, and is treated as an unknown loss (likely polluting the environment) |
 | `{WASTEWATER}` | N lost in wastewater generated by the human population |
 
 ## Troubleshooting

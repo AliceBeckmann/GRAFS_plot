@@ -6,9 +6,9 @@
 \alias{GRAFS}
 \title{GRAFS: Automated GRAFS Diagram Plotter}
 \description{
-Automates the creation of GRAFS (General Representation of Agro-Food Systems) diagrams as described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noe et al. (2017). Reads flow data from CSV files, populates a draw.io XML template with proportional arrow widths and labels, and exports the result as PNG images. Requires the draw.io desktop application (\url{https://github.com/jgraph/drawio-desktop}) to be installed separately.
+Automates the creation of GRAFS (Generalized Representation of Agro-Food Systems) diagrams as described by Billen et al. (2014), Lassaletta et al. (2015), and Le Noe et al. (2017). Reads flow data from CSV files, populates a draw.io XML template with proportional arrow widths and labels, and exports the result as PNG images. Requires the draw.io desktop application (\url{https://github.com/jgraph/drawio-desktop}) to be installed separately.
 
-Automates the creation of GRAFS (General Representation of Agro-Food
+Automates the creation of GRAFS (Generalized Representation of Agro-Food
 Systems) diagrams. Reads flow data from CSV files, populates a draw.io
 XML template with proportional arrow widths and labels, and exports the
 result as PNG images.
@@ -40,14 +40,27 @@ Le Noe, J., et al. (2017). \emph{Science of the Total Environment}.
 Rodriguez, A., et al. (2023). \emph{Science of the Total Environment}
 892: 164467.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/AliceBeckmann/GRAFS_plot}
+  \item Report bugs at \url{https://github.com/AliceBeckmann/GRAFS_plot/issues}
+}
+
+}
 \author{
-\strong{Maintainer}: Alice Beckmann \email{alice.beckmann@cchs.csic.es}
+\strong{Maintainer}: Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
 
 Authors:
 \itemize{
-  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es}
-  \item Catalin Covaci
-  \item Luis Lassaletta
+  \item Alice Beckmann \email{alice.beckmann@cchs.csic.es} (\href{https://orcid.org/0009-0009-6840-0258}{ORCID})
+  \item Alfredo Rodriguez \email{alfredo.rodriguez@uclm.es} (\href{https://orcid.org/0000-0001-7987-1623}{ORCID}) [copyright holder]
+  \item Luis Lassaletta \email{luis.lassaletta@upm.es} (\href{https://orcid.org/0000-0001-9428-2149}{ORCID})
+}
+
+Other contributors:
+\itemize{
+  \item Catalin Covaci \email{catalin.covaci@csic.es} (\href{https://orcid.org/0009-0005-2186-5972}{ORCID}) [contributor]
 }
 
 }
